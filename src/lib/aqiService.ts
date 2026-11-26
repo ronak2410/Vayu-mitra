@@ -111,6 +111,13 @@ export const CITY_PRESETS: CityPreset[] = [
   { city: 'Kolkata', neighborhood: 'Salt Lake', lat: 22.5867, lon: 88.417, label: 'Kolkata' },
 ];
 
+/**
+ * Formats a concise, shareable daily air quality brief for families and RWAs.
+ */
+export function buildDailyAirBrief(aqiData: AQIData, city: string, bestHours: string): string {
+  return `VayuMitra Live Air Brief — ${city}: AQI ${aqiData.aqi} (${aqiData.status}) | PM2.5: ${aqiData.pm25} µg/m³ | Trap Risk: ${aqiData.weather.inversionRisk}. Best outdoor/ventilation window: ${bestHours}.`;
+}
+
 export function getAQIStatus(aqi: number): AQIStatus {
   if (aqi <= 50) return 'Good';
   if (aqi <= 150) return 'Moderate';

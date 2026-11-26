@@ -12,9 +12,11 @@ import {
   Sparkles,
   Thermometer,
   Gauge,
+  Share2,
+  Check,
 } from 'lucide-react';
 import { AQIData, HouseholdProfile, HourlyAQIPoint } from '@/types/vayumitra';
-import { formatVulnerableGroups } from '@/lib/aqiService';
+import { buildDailyAirBrief, formatVulnerableGroups } from '@/lib/aqiService';
 import AtmosphericOrb3D from '@/components/AtmosphericOrb3D';
 import TiltCard from '@/components/TiltCard';
 import AnimatedNumber from '@/components/AnimatedNumber';
@@ -78,6 +80,7 @@ function getHouseholdRiskMessage(aqiData: AQIData, profile: HouseholdProfile): s
 
 export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboardProps) {
   const [hoveredHour, setHoveredHour] = useState<HourlyAQIPoint | null>(null);
+  const [copied, setCopied] = useState(false);
   const styles = getStatusStyles(aqiData.status);
 
   const maxPm25 = Math.max(...aqiData.hourly.map((h) => h.pm25), 100);
@@ -86,6 +89,17 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
     .slice(0, 3)
     .map((h) => h.hour)
     .join(', ');
+
+  const handleCopyBrief = async () => {
+    const brief = buildDailyAirBrief(aqiData, profile.city, bestHours);
+    try {
+      await navigator.clipboard.writeText(brief);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable
+    }
+  };
 
   return (
     <motion.div
@@ -110,6 +124,24 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
                 >
                   {aqiData.status}
                 </span>
+                <button
+                  type="button"
+                  onClick={handleCopyBrief}
+                  aria-label="Copy shareable daily air quality brief"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/85 hover:bg-white text-slate-700 border border-slate-200/80 shadow-2xs transition"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-600" aria-hidden="true" />
+                      Copied Brief
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3 h-3 text-emerald-600" aria-hidden="true" />
+                      Share Brief
+                    </>
+                  )}
+                </button>
               </div>
               <p
                 className="text-xs font-semibold text-slate-600 truncate"

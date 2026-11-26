@@ -6,6 +6,7 @@ import {
   getDemoAQIData,
   CITY_PRESETS,
   formatVulnerableGroups,
+  buildDailyAirBrief,
 } from '../src/lib/aqiService.ts';
 import {
   validateAirPayload,
@@ -306,4 +307,31 @@ test('sanitizeQuestion strips control characters and enforces length limit', () 
 test('resolveGeminiKey accepts valid client key and rejects oversized input', () => {
   assert.equal(resolveGeminiKey('  AIzaTestKey123  '), 'AIzaTestKey123');
   assert.equal(resolveGeminiKey('x'.repeat(200)), '');
+});
+
+// 41-44: Daily Air Brief & Boundary Tests
+test('buildDailyAirBrief formats shareable community summary', () => {
+  const data = getDemoAQIData('delhi-severe');
+  const brief = buildDailyAirBrief(data, 'Delhi NCR', '13:00, 14:00');
+  assert.match(brief, /Delhi NCR/);
+  assert.match(brief, /AQI 420 \(Severe\)/);
+  assert.match(brief, /13:00, 14:00/);
+});
+
+test('buildDailyAirBrief includes inversion risk and PM2.5', () => {
+  const data = getDemoAQIData('bengaluru-moderate');
+  const brief = buildDailyAirBrief(data, 'Bengaluru', '12:00');
+  assert.match(brief, /PM2\.5: 33/);
+  assert.match(brief, /Trap Risk: Low/);
+});
+
+test('sanitizeQuestion rejects non-string types', () => {
+  assert.equal(sanitizeQuestion(12345).valid, false);
+  assert.equal(sanitizeQuestion(null).valid, false);
+  assert.equal(sanitizeQuestion(undefined).valid, false);
+});
+
+test('validateAirPayload rejects invalid city length', () => {
+  const badProfile = { ...BASE_PROFILE, city: 'x'.repeat(105) };
+  assert.equal(validateAirPayload(badProfile, getDemoAQIData('delhi-severe')).valid, false);
 });

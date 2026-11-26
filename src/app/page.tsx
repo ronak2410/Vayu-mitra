@@ -10,6 +10,8 @@ import {
   MapPin,
   X,
   Plus,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import {
   AQIData,
@@ -77,6 +79,7 @@ export default function HomePage() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [twilightMode, setTwilightMode] = useState(false);
 
   const loadRecommendations = useCallback(
     async (prof: HouseholdProfile, aqi: AQIData, key: string) => {
@@ -201,7 +204,11 @@ export default function HomePage() {
   };
 
   return (
-    <div className="relative min-h-screen text-slate-900">
+    <div
+      className={`relative min-h-screen transition-colors duration-500 ${
+        twilightMode ? 'bg-slate-950/85 text-slate-100' : 'text-slate-900'
+      }`}
+    >
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-emerald-600 focus:text-white focus:text-xs focus:font-bold focus:shadow-lg"
@@ -250,6 +257,20 @@ export default function HomePage() {
             >
               <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${aqiLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Sync Live</span>
+            </button>
+
+            <button
+              onClick={() => setTwilightMode(!twilightMode)}
+              aria-pressed={twilightMode}
+              aria-label="Toggle twilight smog mode"
+              title="Toggle Twilight Smog Mode"
+              className="flex items-center justify-center p-2 rounded-xl border border-slate-200 bg-white/90 hover:bg-white text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition"
+            >
+              {twilightMode ? (
+                <Sun className="w-4 h-4 text-amber-500" aria-hidden="true" />
+              ) : (
+                <Moon className="w-4 h-4 text-indigo-600" aria-hidden="true" />
+              )}
             </button>
 
             <button
