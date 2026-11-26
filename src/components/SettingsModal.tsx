@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { KeyRound, X, Check } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -17,6 +17,15 @@ export default function SettingsModal({
   onSave,
 }: SettingsModalProps) {
   const [draftKey, setDraftKey] = useState(apiKey);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

@@ -54,6 +54,7 @@ export default function CommutePlanner({ aqiData }: { aqiData: AQIData }) {
             min={1}
             max={30}
             value={distanceKm}
+            aria-label="Trip distance in kilometers"
             onChange={(e) => setDistanceKm(Number(e.target.value))}
             className="w-28 accent-emerald-600 cursor-pointer"
           />

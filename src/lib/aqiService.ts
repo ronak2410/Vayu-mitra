@@ -3,8 +3,30 @@ import type {
   AQIStatus,
   DailyForecastPoint,
   HourlyAQIPoint,
+  VulnerableGroup,
   WeatherContext,
 } from '../types/vayumitra';
+
+/**
+ * Formats vulnerable household group IDs into human-readable labels.
+ */
+export function formatVulnerableGroups(
+  groups: VulnerableGroup[],
+  fallback = 'your household'
+): string {
+  if (!groups.length) return fallback;
+  return groups
+    .map((g) =>
+      g === 'infants'
+        ? 'Infants & Toddlers'
+        : g === 'elderly'
+        ? 'Elderly'
+        : g === 'asthma'
+        ? 'Asthma/Respiratory'
+        : 'Pets'
+    )
+    .join(', ');
+}
 
 const aqiCache = new Map<string, { data: AQIData; expiresAt: number }>();
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes

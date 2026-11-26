@@ -5,8 +5,7 @@ export function getFallbackRecommendations(
   aqiData: AQIData
 ): ActionEngineResponse {
   const isSevere = aqiData.aqi > 250;
-  const hasVulnerable = profile.vulnerableGroups.length > 0;
-  const vulnerableLabel = hasVulnerable
+  const vulnerableLabel = profile.vulnerableGroups.length
     ? profile.vulnerableGroups
         .map((g) =>
           g === 'infants'

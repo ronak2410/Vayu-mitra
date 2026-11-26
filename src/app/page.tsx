@@ -201,6 +201,12 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen text-slate-900">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-emerald-600 focus:text-white focus:text-xs focus:font-bold focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       <DynamicSkyBackground
         status={aqiData.status}
         pm25={aqiData.pm25}
@@ -274,7 +280,7 @@ export default function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="space-y-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <LocationSearchBar

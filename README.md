@@ -4,12 +4,25 @@
 
 ---
 
+## Architecture Overview
+
+```mermaid
+flowchart LR
+  User["User Browser (React 19 + 3D Motion UI)"] -->|"Live AQI & Weather"| OpenMeteo["Open-Meteo Air Quality, Weather & Geocoding APIs"]
+  User -->|"GPS Reverse Geocode"| BigData["BigDataCloud Geocode API"]
+  User -->|"POST /api/recommendations & /api/chat"| NextAPI["Next.js App Router API Routes"]
+  NextAPI -->|"Structured JSON & Q&A"| Gemini["Google Gemini 2.5 Flash"]
+  NextAPI -->|"No Key / Offline Fallback"| Fallback["Smart Offline AI Engine"]
+```
+
+---
+
 ## Key Features
 
 1. **100% Live Real-Time Air Quality & Weather Intelligence**
    - Fetches live **US AQI, PM2.5, PM10, NO₂**, 24-hour hourly trends, and **5-Day Smog Forecasts** from the **Open-Meteo Air Quality API** (no API key required).
    - Integrates **Open-Meteo Weather** for real-time Temperature, Humidity, Wind Speed, and **Winter Inversion / Smog Trap Risk** calculation.
-   - Includes a **2-minute TTL in-memory cache** for instant switching across saved cities.
+   - Includes a **2-minute TTL in-memory cache** (`aqiCache`) for instant switching across saved cities.
 
 2. **Global City / Area Search & 1-Click GPS Detection**
    - Search **any city, town, or neighborhood worldwide** via Open-Meteo Geocoding.
@@ -35,11 +48,16 @@
 
 ---
 
-## Tech Stack
-- **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, Framer Motion, Lucide Icons
-- **AI:** Google Gemini API (`@google/generative-ai` — `gemini-2.5-flash`)
-- **Live Data:** Open-Meteo Air Quality, Weather, and Geocoding APIs
-- **Testing:** Native Node.js `node:test` (`36` unit tests)
+## API Endpoints & Environment Variables
+
+| Endpoint | Method | Purpose | Validation & Security |
+| :--- | :--- | :--- | :--- |
+| `/api/recommendations` | `POST` | Generates 3x3 personalized cards with `Direct Impact` | Validates `profile` & `aqiData` types |
+| `/api/chat` | `POST` | Context-aware family smog Q&A | Validates `question` (`<= 500` chars) & context |
+
+| Environment Variable | Required | Description |
+| :--- | :--- | :--- |
+| `GEMINI_API_KEY` | Optional | Enables live `gemini-2.5-flash` server-side responses (falls back to Smart Offline Mode if unset) |
 
 ---
 
@@ -60,18 +78,19 @@ Open [http://localhost:3000](http://localhost:3000). You can also enter your Gem
 
 ---
 
-## Quality, Security & Testing
+## Quality, Security, Accessibility & Testing
 
 ```bash
-# TypeScript check
+# TypeScript type check
 npx tsc --noEmit
 
 # ESLint check
 npm run lint
 
-# Run all 36 unit tests
+# Run all 35 unit tests
 npm test
 ```
 
-- **Security:** HTTP security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection`) configured in `next.config.ts`, plus strict payload validation and coordinate bounds checking on all API routes.
-- **Accessibility:** Full `role="dialog"`, `aria-modal`, `role="tablist"`/`tab`, `aria-expanded`, `aria-live`, keyboard `Escape` support, and `focus-visible` rings.
+- **Security:** HTTP security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-XSS-Protection`) configured in `next.config.ts`, plus strict payload validation and coordinate bounds checking (`isValidCoordinates`).
+- **Accessibility:** Skip-to-main-content link, `role="dialog"` / `aria-modal="true"` with `Escape`-key closing on all drawers/modals, `role="tablist"` / `role="tab"`, `aria-expanded`, `aria-live="polite"`, and `focus-visible` keyboard rings.
+- **Deployment:** Ready for 1-click deployment on **Vercel** (`npm run build`).

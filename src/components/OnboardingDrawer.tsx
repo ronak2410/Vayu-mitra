@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MapPin,
   Navigation,
@@ -56,6 +56,15 @@ export default function OnboardingDrawer({
 }: OnboardingDrawerProps) {
   const [draft, setDraft] = useState<HouseholdProfile>(profile);
   const [detecting, setDetecting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

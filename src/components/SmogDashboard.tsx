@@ -14,6 +14,7 @@ import {
   Gauge,
 } from 'lucide-react';
 import { AQIData, HouseholdProfile, HourlyAQIPoint } from '@/types/vayumitra';
+import { formatVulnerableGroups } from '@/lib/aqiService';
 import AtmosphericOrb3D from '@/components/AtmosphericOrb3D';
 import TiltCard from '@/components/TiltCard';
 
@@ -53,30 +54,22 @@ function getStatusStyles(status: AQIData['status']) {
 }
 
 function getHouseholdRiskMessage(aqiData: AQIData, profile: HouseholdProfile): string {
-  const groups = profile.vulnerableGroups;
-  const labels = groups.map((g) =>
-    g === 'infants'
-      ? 'Infants & Toddlers'
-      : g === 'elderly'
-      ? 'Elderly'
-      : g === 'asthma'
-      ? 'Asthma/Respiratory'
-      : 'Pets'
-  );
+  const hasGroups = profile.vulnerableGroups.length > 0;
+  const label = formatVulnerableGroups(profile.vulnerableGroups, '');
 
   if (aqiData.status === 'Severe') {
-    return labels.length
-      ? `Critical Risk for ${labels.join(' & ')} today — stay indoors`
+    return hasGroups
+      ? `Critical Risk for ${label} today — stay indoors`
       : 'Severe Smog Alert — avoid outdoor exertion';
   }
   if (aqiData.status === 'Poor') {
-    return labels.length
-      ? `High Sensitivity Alert for ${labels.join(' & ')} — limit outdoor time`
+    return hasGroups
+      ? `High Sensitivity Alert for ${label} — limit outdoor time`
       : 'Poor Air Quality — wear N95 mask outdoors';
   }
   if (aqiData.status === 'Moderate') {
-    return labels.length
-      ? `Moderate Caution for ${labels.join(' & ')} during peak traffic`
+    return hasGroups
+      ? `Moderate Caution for ${label} during peak traffic`
       : 'Moderate Air Quality — safe for most activities';
   }
   return 'Good Air Quality — ideal for outdoor ventilation';
