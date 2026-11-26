@@ -83,6 +83,9 @@ export default function LocationSearchBar({
           aria-label="Search any city or area"
           value={query}
           onFocus={() => results.length > 0 && setOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setOpen(false);
+          }}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={`Search any city or area (currently: ${currentLabel})...`}
           className="w-full pl-9 pr-9 py-2.5 text-xs sm:text-sm bg-white/85 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 placeholder:text-slate-400"

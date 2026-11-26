@@ -27,3 +27,4 @@ export const DEFAULT_SAVED_LOCATIONS: SavedLocation[] = [
     lon: 77.6408,
   },
 ];
+

@@ -7,6 +7,7 @@ import {
   CITY_PRESETS,
   formatVulnerableGroups,
   buildDailyAirBrief,
+  getWhoRatioLabel,
 } from '../src/lib/aqiService.ts';
 import {
   validateAirPayload,
@@ -355,4 +356,15 @@ test('getDemoAQIData weather includes finite temperature and humidity', () => {
   const d = getDemoAQIData('delhi-severe');
   assert.ok(Number.isFinite(d.weather.temperatureC));
   assert.ok(d.weather.humidityPct >= 0 && d.weather.humidityPct <= 100);
+});
+
+// 49-50: WHO Guideline Ratio Tests
+test('getWhoRatioLabel reports Within WHO limit when at or below threshold', () => {
+  assert.equal(getWhoRatioLabel(15, 15), 'Within WHO limit');
+  assert.equal(getWhoRatioLabel(10, 15), 'Within WHO limit');
+});
+
+test('getWhoRatioLabel computes exact multiplier above WHO threshold', () => {
+  assert.equal(getWhoRatioLabel(45, 15), '3.0× WHO limit');
+  assert.equal(getWhoRatioLabel(33, 15), '2.2× WHO limit');
 });

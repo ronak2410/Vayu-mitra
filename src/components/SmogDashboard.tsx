@@ -16,7 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { AQIData, HouseholdProfile, HourlyAQIPoint } from '@/types/vayumitra';
-import { buildDailyAirBrief, formatVulnerableGroups } from '@/lib/aqiService';
+import { buildDailyAirBrief, formatVulnerableGroups, getWhoRatioLabel } from '@/lib/aqiService';
 import AtmosphericOrb3D from '@/components/AtmosphericOrb3D';
 import TiltCard from '@/components/TiltCard';
 import AnimatedNumber from '@/components/AnimatedNumber';
@@ -202,8 +202,8 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
               </span>
               <span className="text-xs font-medium text-slate-500 ml-1">µg/m³</span>
             </div>
-            <p className="text-[11px] text-slate-500 leading-snug">
-              Fine inhalable particles (WHO limit: 15)
+            <p className="text-[11px] font-medium text-slate-500 leading-snug">
+              WHO 24h limit: 15 • <strong className="text-slate-700">{getWhoRatioLabel(aqiData.pm25, 15)}</strong>
             </p>
           </TiltCard>
 
@@ -223,8 +223,8 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
               </span>
               <span className="text-xs font-medium text-slate-500 ml-1">µg/m³</span>
             </div>
-            <p className="text-[11px] text-slate-500 leading-snug">
-              Coarse road & construction dust
+            <p className="text-[11px] font-medium text-slate-500 leading-snug">
+              WHO 24h limit: 45 • <strong className="text-slate-700">{getWhoRatioLabel(aqiData.pm10, 45)}</strong>
             </p>
           </TiltCard>
 
@@ -244,8 +244,8 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
               </span>
               <span className="text-xs font-medium text-slate-500 ml-1">µg/m³</span>
             </div>
-            <p className="text-[11px] text-slate-500 leading-snug">
-              Traffic & combustion gas
+            <p className="text-[11px] font-medium text-slate-500 leading-snug">
+              WHO 24h limit: 25 • <strong className="text-slate-700">{getWhoRatioLabel(aqiData.no2, 25)}</strong>
             </p>
           </TiltCard>
         </div>
@@ -289,11 +289,16 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
                 : 'bg-gradient-to-t from-rose-600 to-rose-400 shadow-rose-500/20';
 
             return (
-              <div
+              <button
                 key={point.hour}
+                type="button"
+                tabIndex={0}
+                aria-label={`${point.hour}: PM2.5 ${point.pm25} micrograms per cubic meter, ${point.safeLevel}`}
                 onMouseEnter={() => setHoveredHour(point)}
                 onMouseLeave={() => setHoveredHour(null)}
-                className="flex-1 flex flex-col items-center justify-end h-full group cursor-pointer"
+                onFocus={() => setHoveredHour(point)}
+                onBlur={() => setHoveredHour(null)}
+                className="flex-1 flex flex-col items-center justify-end h-full group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-t-lg"
               >
                 <motion.div
                   initial={{ height: 0, opacity: 0.4 }}
@@ -303,7 +308,7 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
                   style={{ originY: 1 }}
                   className={`w-full rounded-t-lg shadow-sm ${barColor}`}
                 />
-              </div>
+              </button>
             );
           })}
         </div>

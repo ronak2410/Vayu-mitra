@@ -118,6 +118,16 @@ export function buildDailyAirBrief(aqiData: AQIData, city: string, bestHours: st
   return `VayuMitra Live Air Brief — ${city}: AQI ${aqiData.aqi} (${aqiData.status}) | PM2.5: ${aqiData.pm25} µg/m³ | Trap Risk: ${aqiData.weather.inversionRisk}. Best outdoor/ventilation window: ${bestHours}.`;
 }
 
+/**
+ * Computes how many times a pollutant exceeds its WHO 2021 24-hour guideline.
+ */
+export function getWhoRatioLabel(value: number, whoLimit: number): string {
+  if (whoLimit <= 0 || value <= 0) return 'Within WHO limit';
+  const ratio = value / whoLimit;
+  if (ratio <= 1) return 'Within WHO limit';
+  return `${ratio.toFixed(1)}× WHO limit`;
+}
+
 export function getAQIStatus(aqi: number): AQIStatus {
   if (aqi <= 50) return 'Good';
   if (aqi <= 150) return 'Moderate';
