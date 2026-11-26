@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Moon,
   Sun,
+  AlertTriangle,
 } from 'lucide-react';
 import type {
   AQIData,
@@ -17,6 +18,12 @@ import type {
 import { fetchLiveAQI, getDemoAQIData } from '@/lib/aqiService';
 import { DEFAULT_PROFILE, DEFAULT_SAVED_LOCATIONS } from '@/lib/constants';
 import { getFallbackRecommendations } from '@/lib/fallbackAI';
+import {
+  addSavedLocation,
+  loadSavedLocations,
+  persistSavedLocations,
+  removeSavedLocation,
+} from '@/lib/locationStorage';
 import DynamicSkyBackground from '@/components/DynamicSkyBackground';
 import HeaderNav from '@/components/HeaderNav';
 import LocationSearchBar from '@/components/LocationSearchBar';
@@ -39,6 +46,7 @@ export default function HomePage() {
   const [savedLocations, setSavedLocations] = useState<SavedLocation[]>(DEFAULT_SAVED_LOCATIONS);
   const [aqiData, setAqiData] = useState<AQIData>(() => getDemoAQIData('delhi-severe'));
   const [aqiLoading, setAqiLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const [actionData, setActionData] = useState<ActionEngineResponse>(() =>
     getFallbackRecommendations(DEFAULT_PROFILE, getDemoAQIData('delhi-severe'))
@@ -52,24 +60,45 @@ export default function HomePage() {
   const [twilightMode, setTwilightMode] = useState(false);
 
   const initialLoadDone = useRef(false);
+  const aqiAbortRef = useRef<AbortController | null>(null);
+  const aiAbortRef = useRef<AbortController | null>(null);
+  const aqiSeqRef = useRef(0);
+  const aiSeqRef = useRef(0);
 
   const loadRecommendations = useCallback(
     async (prof: HouseholdProfile, aqi: AQIData, key: string) => {
+      aiAbortRef.current?.abort();
+      const controller = new AbortController();
+      aiAbortRef.current = controller;
+      const reqId = ++aiSeqRef.current;
+
       setAiLoading(true);
       try {
         const res = await fetch('/api/recommendations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ profile: prof, aqiData: aqi, apiKey: key }),
+          signal: controller.signal,
         });
-        if (res.ok) {
-          const data: ActionEngineResponse = await res.json();
+        if (!res.ok) {
+          throw new Error(`Recommendations API returned HTTP ${res.status}`);
+        }
+        const data: ActionEngineResponse = await res.json();
+        if (reqId === aiSeqRef.current) {
           setActionData(data);
         }
-      } catch {
-        setActionData(getFallbackRecommendations(prof, aqi));
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
+        if (reqId === aiSeqRef.current) {
+          setActionData(getFallbackRecommendations(prof, aqi));
+          setFetchError(
+            'Live AI recommendations could not be refreshed; showing Smart Offline recommendations.'
+          );
+        }
       } finally {
-        setAiLoading(false);
+        if (reqId === aiSeqRef.current) {
+          setAiLoading(false);
+        }
       }
     },
     []
@@ -77,20 +106,35 @@ export default function HomePage() {
 
   const loadAQI = useCallback(
     async (prof: HouseholdProfile, key: string, bypassCache = false) => {
+      aqiAbortRef.current?.abort();
+      const controller = new AbortController();
+      aqiAbortRef.current = controller;
+      const reqId = ++aqiSeqRef.current;
+
       setAqiLoading(true);
+      setFetchError(null);
       try {
         const live = await fetchLiveAQI(
           prof.lat,
           prof.lon,
           `${prof.city} — ${prof.neighborhood}`,
-          bypassCache
+          bypassCache,
+          controller.signal
         );
+        if (reqId !== aqiSeqRef.current) return;
         setAqiData(live);
         loadRecommendations(prof, live, key);
-      } catch {
-        // Keep current state on transient network error
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
+        if (reqId === aqiSeqRef.current) {
+          setFetchError(
+            `Unable to fetch live air quality for ${prof.city}. Please check your connection and retry.`
+          );
+        }
       } finally {
-        setAqiLoading(false);
+        if (reqId === aqiSeqRef.current) {
+          setAqiLoading(false);
+        }
       }
     },
     [loadRecommendations]
@@ -100,26 +144,25 @@ export default function HomePage() {
     if (initialLoadDone.current) return;
     initialLoadDone.current = true;
     queueMicrotask(() => {
-      try {
-        const raw = localStorage.getItem('vayumitra_saved_locations');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) setSavedLocations(parsed);
-        }
-      } catch {
-        // ignore storage errors
-      }
+      const stored = loadSavedLocations(
+        typeof window !== 'undefined' ? window.localStorage : undefined,
+        DEFAULT_SAVED_LOCATIONS
+      );
+      setSavedLocations(stored);
       loadAQI(DEFAULT_PROFILE, '');
     });
+    return () => {
+      aqiAbortRef.current?.abort();
+      aiAbortRef.current?.abort();
+    };
   }, [loadAQI]);
 
   const updateSavedLocations = (next: SavedLocation[]) => {
     setSavedLocations(next);
-    try {
-      localStorage.setItem('vayumitra_saved_locations', JSON.stringify(next));
-    } catch {
-      // ignore storage errors
-    }
+    persistSavedLocations(
+      typeof window !== 'undefined' ? window.localStorage : undefined,
+      next
+    );
   };
 
   const handleProfileSave = (updated: HouseholdProfile) => {
@@ -142,28 +185,11 @@ export default function HomePage() {
     };
     setProfile(updated);
     loadAQI(updated, apiKey);
-
-    const exists = savedLocations.some(
-      (s) =>
-        s.city.toLowerCase() === loc.city.toLowerCase() &&
-        Math.abs(s.lat - loc.lat) < 0.05
-    );
-    if (!exists) {
-      updateSavedLocations([
-        ...savedLocations,
-        {
-          id: `${loc.city.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-          city: loc.city,
-          neighborhood: loc.neighborhood,
-          lat: loc.lat,
-          lon: loc.lon,
-        },
-      ]);
-    }
+    updateSavedLocations(addSavedLocation(savedLocations, loc));
   };
 
   const handleRemoveLocation = (id: string) => {
-    updateSavedLocations(savedLocations.filter((loc) => loc.id !== id));
+    updateSavedLocations(removeSavedLocation(savedLocations, id));
   };
 
   const handleApiKeySave = (key: string) => {
@@ -225,6 +251,26 @@ export default function HomePage() {
             onRemoveLocation={handleRemoveLocation}
           />
         </div>
+
+        {fetchError && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="rounded-2xl border border-amber-300 bg-amber-50/95 px-4 py-3 flex items-center justify-between gap-3 text-xs text-amber-950 shadow-xs"
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" aria-hidden="true" />
+              <span className="font-medium">{fetchError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => loadAQI(profile, apiKey, true)}
+              className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shrink-0 transition"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         <SmogAlertBanner aqiData={aqiData} profile={profile} />
         <SmogDashboard aqiData={aqiData} profile={profile} loading={aqiLoading} />

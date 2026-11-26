@@ -8,12 +8,22 @@ import {
   formatVulnerableGroups,
   buildDailyAirBrief,
   getWhoRatioLabel,
+  fetchLiveAQI,
+  clearAQICache,
 } from '../src/lib/aqiService.ts';
 import {
   validateAirPayload,
   sanitizeQuestion,
   resolveGeminiKey,
+  handleChatRequest,
+  handleRecommendationsRequest,
 } from '../src/lib/geminiServer.ts';
+import {
+  addSavedLocation,
+  removeSavedLocation,
+  loadSavedLocations,
+  persistSavedLocations,
+} from '../src/lib/locationStorage.ts';
 import {
   getFallbackRecommendations,
   getFallbackChatResponse,
@@ -377,4 +387,215 @@ test('getWhoRatioLabel handles zero or negative pollutant values safely', () => 
 
 test('getWhoRatioLabel handles invalid zero WHO limit safely', () => {
   assert.equal(getWhoRatioLabel(50, 0), 'Within WHO limit');
+});
+
+// 53-60: API Route Tests (/api/chat and /api/recommendations)
+function makeJsonRequest(url: string, body: unknown): Request {
+  return new Request(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+  });
+}
+
+test('POST /api/chat returns 400 for malformed JSON body', async () => {
+  const req = makeJsonRequest('http://localhost/api/chat', '{bad-json');
+  const res = await handleChatRequest(req, getFallbackChatResponse);
+  assert.equal(res.status, 400);
+  const data = await res.json();
+  assert.match(data.error, /Malformed JSON/i);
+});
+
+test('POST /api/chat returns 400 for invalid commuteMode in profile', async () => {
+  const req = makeJsonRequest('http://localhost/api/chat', {
+    question: 'Is it safe outside?',
+    profile: { ...BASE_PROFILE, commuteMode: 'Helicopter' },
+    aqiData: getDemoAQIData('delhi-severe'),
+  });
+  const res = await handleChatRequest(req, getFallbackChatResponse);
+  assert.equal(res.status, 400);
+  const data = await res.json();
+  assert.match(data.error, /commuteMode/i);
+});
+
+test('POST /api/chat returns 400 for oversized question', async () => {
+  const req = makeJsonRequest('http://localhost/api/chat', {
+    question: 'a'.repeat(501),
+    profile: BASE_PROFILE,
+    aqiData: getDemoAQIData('delhi-severe'),
+  });
+  const res = await handleChatRequest(req, getFallbackChatResponse);
+  assert.equal(res.status, 400);
+});
+
+test('POST /api/chat returns 200 with fallback reply when no API key is set', async () => {
+  const req = makeJsonRequest('http://localhost/api/chat', {
+    question: 'Is it safe to take my 3-year-old to the park at 5 PM?',
+    profile: BASE_PROFILE,
+    aqiData: getDemoAQIData('delhi-severe'),
+  });
+  const res = await handleChatRequest(req, getFallbackChatResponse);
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.isFallback, true);
+  assert.match(data.reply, /not safe/i);
+});
+
+test('POST /api/recommendations returns 400 for malformed JSON body', async () => {
+  const req = makeJsonRequest('http://localhost/api/recommendations', 'not-json');
+  const res = await handleRecommendationsRequest(req, getFallbackRecommendations);
+  assert.equal(res.status, 400);
+});
+
+test('POST /api/recommendations returns 400 for incomplete AQI payload', async () => {
+  const req = makeJsonRequest('http://localhost/api/recommendations', {
+    profile: BASE_PROFILE,
+    aqiData: { aqi: 120 },
+  });
+  const res = await handleRecommendationsRequest(req, getFallbackRecommendations);
+  assert.equal(res.status, 400);
+});
+
+test('POST /api/recommendations returns 200 with 3 modules for valid payload', async () => {
+  const req = makeJsonRequest('http://localhost/api/recommendations', {
+    profile: BASE_PROFILE,
+    aqiData: getDemoAQIData('delhi-severe'),
+  });
+  const res = await handleRecommendationsRequest(req, getFallbackRecommendations);
+  assert.equal(res.status, 200);
+  const data = await res.json();
+  assert.equal(data.routines.length, 3);
+  assert.equal(data.iaq.length, 3);
+  assert.equal(data.alternatives.length, 3);
+});
+
+// 61-64: Real fetchLiveAQI & Caching / Error Behavior Tests
+test('fetchLiveAQI throws on non-OK HTTP status from Open-Meteo', async () => {
+  clearAQICache();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    new Response('Service Unavailable', { status: 503 })) as typeof fetch;
+  try {
+    await assert.rejects(
+      () => fetchLiveAQI(28.64, 77.31, 'Delhi', true),
+      /Open-Meteo Air Quality API error: 503/
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('fetchLiveAQI parses live AQI, weather, and caches subsequent calls', async () => {
+  clearAQICache();
+  let callCount = 0;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    callCount++;
+    const url = String(input);
+    if (url.includes('air-quality-api')) {
+      return new Response(
+        JSON.stringify({
+          current: { us_aqi: 185, pm2_5: 92, pm10: 140, nitrogen_dioxide: 48 },
+          hourly: {
+            time: Array.from({ length: 48 }, (_, i) => `2026-11-27T${(i % 24).toString().padStart(2, '0')}:00`),
+            pm2_5: Array.from({ length: 48 }, () => 85),
+            us_aqi: Array.from({ length: 48 }, () => 170),
+          },
+        }),
+        { status: 200 }
+      );
+    }
+    return new Response(
+      JSON.stringify({
+        current: { temperature_2m: 14, relative_humidity_2m: 70, wind_speed_10m: 5 },
+      }),
+      { status: 200 }
+    );
+  }) as typeof fetch;
+
+  try {
+    const first = await fetchLiveAQI(28.64, 77.31, 'Delhi NCR');
+    assert.equal(first.aqi, 185);
+    assert.equal(first.status, 'Poor');
+    assert.equal(first.weather.inversionRisk, 'High');
+    assert.equal(first.dailyForecast?.length, 2);
+    assert.equal(callCount, 2);
+
+    // Cached call should not hit network
+    const second = await fetchLiveAQI(28.64, 77.31, 'Delhi NCR — Updated Label');
+    assert.equal(second.locationLabel, 'Delhi NCR — Updated Label');
+    assert.equal(callCount, 2);
+
+    // bypassCache=true forces fresh network fetch
+    await fetchLiveAQI(28.64, 77.31, 'Delhi NCR', true);
+    assert.equal(callCount, 4);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+// 65-68: Saved-City Persistence & Location Switching Tests
+test('addSavedLocation adds a new city and prevents duplicates', () => {
+  const initial = [
+    { id: 'delhi', city: 'Delhi NCR', neighborhood: 'Anand Vihar', lat: 28.64, lon: 77.31 },
+  ];
+  const added = addSavedLocation(
+    initial,
+    { city: 'Mumbai', neighborhood: 'BKC', lat: 19.06, lon: 72.86 },
+    1
+  );
+  assert.equal(added.length, 2);
+  assert.equal(added[1].city, 'Mumbai');
+
+  const dup = addSavedLocation(
+    added,
+    { city: 'Mumbai', neighborhood: 'BKC', lat: 19.06, lon: 72.86 },
+    2
+  );
+  assert.equal(dup.length, 2);
+});
+
+test('removeSavedLocation removes city by id', () => {
+  const list = [
+    { id: 'delhi', city: 'Delhi NCR', neighborhood: 'Anand Vihar', lat: 28.64, lon: 77.31 },
+    { id: 'blr', city: 'Bengaluru', neighborhood: 'Indiranagar', lat: 12.97, lon: 77.64 },
+  ];
+  const next = removeSavedLocation(list, 'delhi');
+  assert.equal(next.length, 1);
+  assert.equal(next[0].id, 'blr');
+});
+
+test('loadSavedLocations handles corrupted JSON and missing storage safely', () => {
+  const fallback = [
+    { id: 'delhi', city: 'Delhi NCR', neighborhood: 'Anand Vihar', lat: 28.64, lon: 77.31 },
+  ];
+  assert.deepEqual(loadSavedLocations(undefined, fallback), fallback);
+  assert.deepEqual(
+    loadSavedLocations({ getItem: () => '{broken-json' }, fallback),
+    fallback
+  );
+});
+
+test('persistSavedLocations writes JSON and handles storage errors gracefully', () => {
+  let saved = '';
+  const ok = persistSavedLocations(
+    {
+      setItem: (_k, v) => {
+        saved = v;
+      },
+    },
+    [{ id: 'mum', city: 'Mumbai', neighborhood: 'BKC', lat: 19.06, lon: 72.86 }]
+  );
+  assert.equal(ok, true);
+  assert.match(saved, /Mumbai/);
+
+  const fail = persistSavedLocations(
+    {
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+    },
+    []
+  );
+  assert.equal(fail, false);
 });

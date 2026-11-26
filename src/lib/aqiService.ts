@@ -31,6 +31,13 @@ export function formatVulnerableGroups(
 const aqiCache = new Map<string, { data: AQIData; expiresAt: number }>();
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
+/**
+ * Clears the in-memory AQI cache (useful for forced refresh or testing).
+ */
+export function clearAQICache(): void {
+  aqiCache.clear();
+}
+
 export function isValidCoordinates(lat: number, lon: number): boolean {
   return (
     Number.isFinite(lat) &&
@@ -226,7 +233,8 @@ export async function fetchLiveAQI(
   lat: number,
   lon: number,
   locationLabel: string,
-  bypassCache = false
+  bypassCache = false,
+  signal?: AbortSignal
 ): Promise<AQIData> {
   if (!isValidCoordinates(lat, lon)) {
     throw new Error('Invalid geographic coordinates');
@@ -242,8 +250,8 @@ export async function fetchLiveAQI(
   const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=auto`;
 
   const [aqRes, weatherRes] = await Promise.all([
-    fetch(aqUrl, { cache: 'no-store' }),
-    fetch(weatherUrl, { cache: 'no-store' }).catch(() => null),
+    fetch(aqUrl, { cache: 'no-store', signal }),
+    fetch(weatherUrl, { cache: 'no-store', signal }).catch(() => null),
   ]);
 
   if (!aqRes.ok) {
