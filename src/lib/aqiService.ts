@@ -38,6 +38,24 @@ export function clearAQICache(): void {
   aqiCache.clear();
 }
 
+async function fetchWithTimeout(
+  url: string,
+  timeoutMs: number,
+  externalSignal?: AbortSignal
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const onExternalAbort = () => controller.abort();
+  externalSignal?.addEventListener('abort', onExternalAbort, { once: true });
+
+  try {
+    return await fetch(url, { cache: 'no-store', signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+    externalSignal?.removeEventListener('abort', onExternalAbort);
+  }
+}
+
 export function isValidCoordinates(lat: number, lon: number): boolean {
   return (
     Number.isFinite(lat) &&
@@ -250,8 +268,8 @@ export async function fetchLiveAQI(
   const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=auto`;
 
   const [aqRes, weatherRes] = await Promise.all([
-    fetch(aqUrl, { cache: 'no-store', signal }),
-    fetch(weatherUrl, { cache: 'no-store', signal }).catch(() => null),
+    fetchWithTimeout(aqUrl, 6500, signal),
+    fetchWithTimeout(weatherUrl, 5000, signal).catch(() => null),
   ]);
 
   if (!aqRes.ok) {

@@ -200,6 +200,20 @@ export function getGeminiFlashModel(apiKey: string, jsonMode = false) {
   });
 }
 
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Gemini request timed out')), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 /**
  * Shared runtime handler for POST /api/chat.
  */
@@ -262,7 +276,7 @@ User Question: "${qCheck.sanitized}"
 
 Respond concisely in markdown (under 140 words). Always give a clear Yes/No/Caution answer first, followed by 2-3 practical steps, and end with a brief "Direct Impact:" line.`;
 
-    const result = await model.generateContent(prompt);
+    const result = await withTimeout(model.generateContent(prompt), 8000);
     return Response.json({
       reply: result.response.text(),
       isFallback: false,
@@ -352,7 +366,7 @@ Each item MUST have:
   }
 }`;
 
-    const result = await model.generateContent(prompt);
+    const result = await withTimeout(model.generateContent(prompt), 8000);
     const parsed = JSON.parse(result.response.text());
 
     return Response.json({
