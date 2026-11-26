@@ -91,6 +91,6 @@ npm run lint
 npm test
 ```
 
-- **Security:** HTTP security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-XSS-Protection`) configured in `next.config.ts`, plus strict payload validation and coordinate bounds checking (`isValidCoordinates`).
-- **Accessibility:** Skip-to-main-content link, `role="dialog"` / `aria-modal="true"` with `Escape`-key closing on all drawers/modals, `role="tablist"` / `role="tab"`, `aria-expanded`, `aria-live="polite"`, and `focus-visible` keyboard rings.
+- **Security:** HTTP security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-XSS-Protection`, `Permissions-Policy`, `Strict-Transport-Security`) configured in `next.config.ts`, plus strict payload validation, control-character sanitization, and coordinate bounds checking (`isValidCoordinates`).
+- **Accessibility & Multi-Device UX:** Skip-to-main-content link, `role="dialog"` / `aria-modal="true"` with `Escape`-key closing, `role="combobox"` / `listbox` / `tablist`, `aria-pressed`, keyboard-focusable 24-hour timeline bars, `useReducedMotion` support, touch-friendly 3D cards, and a Mobile Quick-Action Bottom Dock.
 - **Deployment:** Ready for 1-click deployment on **Vercel** (`npm run build`).
