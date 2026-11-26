@@ -368,3 +368,13 @@ test('getWhoRatioLabel computes exact multiplier above WHO threshold', () => {
   assert.equal(getWhoRatioLabel(45, 15), '3.0× WHO limit');
   assert.equal(getWhoRatioLabel(33, 15), '2.2× WHO limit');
 });
+
+// 51-52: Additional Guard Tests
+test('getWhoRatioLabel handles zero or negative pollutant values safely', () => {
+  assert.equal(getWhoRatioLabel(0, 15), 'Within WHO limit');
+  assert.equal(getWhoRatioLabel(-5, 15), 'Within WHO limit');
+});
+
+test('getWhoRatioLabel handles invalid zero WHO limit safely', () => {
+  assert.equal(getWhoRatioLabel(50, 0), 'Within WHO limit');
+});

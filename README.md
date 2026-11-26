@@ -87,7 +87,7 @@ npx tsc --noEmit
 # ESLint check
 npm run lint
 
-# Run all 35 unit tests
+# Run all 52 unit tests
 npm test
 ```
 

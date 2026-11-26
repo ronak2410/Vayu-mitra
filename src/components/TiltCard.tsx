@@ -30,7 +30,9 @@ export default function TiltCard({
   });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
+    if (!ref.current || (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches)) {
+      return;
+    }
     const rect = ref.current.getBoundingClientRect();
     const xPct = (e.clientX - rect.left) / rect.width - 0.5;
     const yPct = (e.clientY - rect.top) / rect.height - 0.5;

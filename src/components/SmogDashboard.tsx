@@ -294,6 +294,7 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
                 type="button"
                 tabIndex={0}
                 aria-label={`${point.hour}: PM2.5 ${point.pm25} micrograms per cubic meter, ${point.safeLevel}`}
+                onClick={() => setHoveredHour(point)}
                 onMouseEnter={() => setHoveredHour(point)}
                 onMouseLeave={() => setHoveredHour(null)}
                 onFocus={() => setHoveredHour(point)}

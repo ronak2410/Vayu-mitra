@@ -275,7 +275,7 @@ export default function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-8 space-y-6">
         <div className="space-y-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <LocationSearchBar
@@ -359,6 +359,50 @@ export default function HomePage() {
         />
         <CommunityHub neighborhood={profile.neighborhood} />
       </main>
+
+      {/* Mobile Quick-Action Bottom Dock */}
+      <nav
+        aria-label="Mobile quick actions"
+        className="sm:hidden fixed bottom-3 inset-x-3 z-40 bg-white/90 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-xl px-2 py-1.5 flex items-center justify-around"
+      >
+        <button
+          type="button"
+          onClick={() => loadAQI(profile, apiKey, true)}
+          className="flex flex-col items-center justify-center min-h-[44px] px-3 text-[10px] font-semibold text-slate-700"
+        >
+          <RefreshCw className={`w-4 h-4 text-emerald-600 mb-0.5 ${aqiLoading ? 'animate-spin' : ''}`} aria-hidden="true" />
+          Sync Live
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsProfileOpen(true)}
+          className="flex flex-col items-center justify-center min-h-[44px] px-3 text-[10px] font-semibold text-slate-700"
+        >
+          <SlidersHorizontal className="w-4 h-4 text-emerald-600 mb-0.5" aria-hidden="true" />
+          Profile
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsChatOpen(true)}
+          className="flex flex-col items-center justify-center min-h-[44px] px-4 rounded-xl bg-emerald-600 text-white text-[10px] font-bold shadow-xs"
+        >
+          <MessageSquareHeart className="w-4 h-4 mb-0.5" aria-hidden="true" />
+          AI Advisor
+        </button>
+        <button
+          type="button"
+          onClick={() => setTwilightMode(!twilightMode)}
+          aria-pressed={twilightMode}
+          className="flex flex-col items-center justify-center min-h-[44px] px-3 text-[10px] font-semibold text-slate-700"
+        >
+          {twilightMode ? (
+            <Sun className="w-4 h-4 text-amber-500 mb-0.5" aria-hidden="true" />
+          ) : (
+            <Moon className="w-4 h-4 text-indigo-600 mb-0.5" aria-hidden="true" />
+          )}
+          Theme
+        </button>
+      </nav>
 
       {/* Drawers & Modals */}
       <OnboardingDrawer
