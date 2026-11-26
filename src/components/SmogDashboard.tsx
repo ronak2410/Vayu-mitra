@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { AQIData, HouseholdProfile, HourlyAQIPoint } from '@/types/vayumitra';
 import { buildDailyAirBrief, formatVulnerableGroups, getWhoRatioLabel } from '@/lib/aqiService';
+import { AQI_THEME_MAP } from '@/lib/aqiTheme';
 import AtmosphericOrb3D from '@/components/AtmosphericOrb3D';
 import TiltCard from '@/components/TiltCard';
 import AnimatedNumber from '@/components/AnimatedNumber';
@@ -25,35 +26,6 @@ interface SmogDashboardProps {
   aqiData: AQIData;
   profile: HouseholdProfile;
   loading: boolean;
-}
-
-function getStatusStyles(status: AQIData['status']) {
-  switch (status) {
-    case 'Good':
-      return {
-        bg: 'bg-gradient-to-br from-emerald-50/90 via-white/80 to-teal-50/70 border-emerald-200/80',
-        text: 'text-emerald-900',
-        badge: 'bg-emerald-600 text-white shadow-emerald-500/30',
-      };
-    case 'Moderate':
-      return {
-        bg: 'bg-gradient-to-br from-amber-50/90 via-white/80 to-yellow-50/70 border-amber-200/80',
-        text: 'text-amber-950',
-        badge: 'bg-amber-500 text-white shadow-amber-500/30',
-      };
-    case 'Poor':
-      return {
-        bg: 'bg-gradient-to-br from-orange-50/90 via-white/80 to-amber-50/70 border-orange-200/80',
-        text: 'text-orange-950',
-        badge: 'bg-orange-600 text-white shadow-orange-500/30',
-      };
-    case 'Severe':
-      return {
-        bg: 'bg-gradient-to-br from-rose-50/90 via-white/85 to-orange-50/60 border-rose-200/80',
-        text: 'text-rose-950',
-        badge: 'bg-rose-600 text-white shadow-rose-500/30',
-      };
-  }
 }
 
 function getHouseholdRiskMessage(aqiData: AQIData, profile: HouseholdProfile): string {
@@ -81,7 +53,7 @@ function getHouseholdRiskMessage(aqiData: AQIData, profile: HouseholdProfile): s
 export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboardProps) {
   const [hoveredHour, setHoveredHour] = useState<HourlyAQIPoint | null>(null);
   const [copied, setCopied] = useState(false);
-  const styles = getStatusStyles(aqiData.status);
+  const theme = AQI_THEME_MAP[aqiData.status];
 
   const maxPm25 = Math.max(...aqiData.hourly.map((h) => h.pm25), 100);
   const bestHours = [...aqiData.hourly]
@@ -112,7 +84,7 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <div className="lg:col-span-5">
           <TiltCard
-            className={`rounded-3xl border p-5 flex flex-col sm:flex-row items-center gap-5 shadow-lg backdrop-blur-md ${styles.bg}`}
+            className={`rounded-3xl border p-5 flex flex-col sm:flex-row items-center gap-5 shadow-lg backdrop-blur-md ${theme.cardBgClass}`}
             glowColor="rgba(255,255,255,0.45)"
           >
             <AtmosphericOrb3D aqi={aqiData.aqi} status={aqiData.status} loading={loading} />
@@ -120,7 +92,7 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
             <div className="space-y-2.5 min-w-0 text-center sm:text-left">
               <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
                 <span
-                  className={`text-xs font-bold px-3 py-1 rounded-full shadow-sm ${styles.badge}`}
+                  className={`text-xs font-bold px-3 py-1 rounded-full shadow-sm ${theme.badgeClass}`}
                 >
                   {aqiData.status}
                 </span>
@@ -155,7 +127,7 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
                 ) : (
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5 animate-pulse" />
                 )}
-                <p className={`text-xs font-bold leading-snug ${styles.text}`}>
+                <p className={`text-xs font-bold leading-snug ${theme.cardTextClass}`}>
                   {getHouseholdRiskMessage(aqiData, profile)}
                 </p>
               </div>

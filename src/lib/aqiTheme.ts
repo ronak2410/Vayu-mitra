@@ -3,6 +3,8 @@ import type { AQIStatus } from '@/types/vayumitra';
 export interface AQIThemeTokens {
   badgeClass: string;
   softBadgeClass: string;
+  cardBgClass: string;
+  cardTextClass: string;
   strokeHex: string;
   skyBase: string;
   skyOrbs: [string, string, string];
@@ -22,6 +24,8 @@ export const AQI_THEME_MAP: Record<AQIStatus, AQIThemeTokens> = {
   Good: {
     badgeClass: 'bg-emerald-600 text-white shadow-emerald-500/30',
     softBadgeClass: 'bg-emerald-100 text-emerald-800',
+    cardBgClass: 'bg-gradient-to-br from-emerald-50/90 via-white/80 to-teal-50/70 border-emerald-200/80',
+    cardTextClass: 'text-emerald-900',
     strokeHex: '#059669',
     skyBase: 'from-emerald-50/90 via-teal-50/75 to-sky-100/80',
     skyOrbs: ['bg-emerald-400/25', 'bg-teal-300/25', 'bg-sky-400/20'],
@@ -35,6 +39,8 @@ export const AQI_THEME_MAP: Record<AQIStatus, AQIThemeTokens> = {
   Moderate: {
     badgeClass: 'bg-amber-500 text-white shadow-amber-500/30',
     softBadgeClass: 'bg-amber-100 text-amber-800',
+    cardBgClass: 'bg-gradient-to-br from-amber-50/90 via-white/80 to-yellow-50/70 border-amber-200/80',
+    cardTextClass: 'text-amber-950',
     strokeHex: '#d97706',
     skyBase: 'from-amber-50/80 via-emerald-50/70 to-sky-50/80',
     skyOrbs: ['bg-amber-300/25', 'bg-emerald-300/20', 'bg-sky-300/20'],
@@ -48,6 +54,8 @@ export const AQI_THEME_MAP: Record<AQIStatus, AQIThemeTokens> = {
   Poor: {
     badgeClass: 'bg-orange-600 text-white shadow-orange-500/30',
     softBadgeClass: 'bg-orange-100 text-orange-800',
+    cardBgClass: 'bg-gradient-to-br from-orange-50/90 via-white/80 to-amber-50/70 border-orange-200/80',
+    cardTextClass: 'text-orange-950',
     strokeHex: '#ea580c',
     skyBase: 'from-orange-100/75 via-amber-50/80 to-slate-200/70',
     skyOrbs: ['bg-orange-400/25', 'bg-amber-400/20', 'bg-rose-300/20'],
@@ -61,6 +69,8 @@ export const AQI_THEME_MAP: Record<AQIStatus, AQIThemeTokens> = {
   Severe: {
     badgeClass: 'bg-rose-600 text-white shadow-rose-500/30',
     softBadgeClass: 'bg-rose-100 text-rose-800',
+    cardBgClass: 'bg-gradient-to-br from-rose-50/90 via-white/85 to-orange-50/60 border-rose-200/80',
+    cardTextClass: 'text-rose-950',
     strokeHex: '#e11d48',
     skyBase: 'from-rose-100/80 via-slate-200/85 to-orange-100/70',
     skyOrbs: ['bg-rose-400/25', 'bg-amber-500/20', 'bg-slate-400/25'],
