@@ -103,8 +103,10 @@ export default function ActionEngine({ data, loading, onRefresh }: ActionEngineP
           return (
             <button
               key={tab.id}
+              id={`tab-${tab.id}`}
               role="tab"
               aria-selected={active}
+              aria-controls="action-engine-tabpanel"
               onClick={() => setActiveTab(tab.id)}
               className={`relative flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition ${
                 active ? 'text-emerald-800' : 'text-slate-500 hover:text-slate-800'
@@ -128,6 +130,9 @@ export default function ActionEngine({ data, loading, onRefresh }: ActionEngineP
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
+          id="action-engine-tabpanel"
+          role="tabpanel"
+          aria-labelledby={`tab-${activeTab}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}

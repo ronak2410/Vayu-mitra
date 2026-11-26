@@ -17,6 +17,8 @@ import {
   resolveGeminiKey,
   handleChatRequest,
   handleRecommendationsRequest,
+  checkRateLimit,
+  clearRateLimits,
 } from '../src/lib/geminiServer.ts';
 import {
   addSavedLocation,
@@ -598,4 +600,34 @@ test('persistSavedLocations writes JSON and handles storage errors gracefully', 
     []
   );
   assert.equal(fail, false);
+});
+
+// 66-67: Rate Limiting Security Tests
+test('checkRateLimit allows up to 40 requests per window and blocks 41st', () => {
+  clearRateLimits();
+  for (let i = 0; i < 40; i++) {
+    assert.equal(checkRateLimit('test-ip'), true);
+  }
+  assert.equal(checkRateLimit('test-ip'), false);
+});
+
+test('handleChatRequest returns 429 when rate limit is exceeded', async () => {
+  clearRateLimits();
+  for (let i = 0; i < 40; i++) {
+    checkRateLimit('chat:10.0.0.1');
+  }
+  const req = new Request('http://localhost/api/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-forwarded-for': '10.0.0.1',
+    },
+    body: JSON.stringify({
+      question: 'Is it safe?',
+      profile: BASE_PROFILE,
+      aqiData: getDemoAQIData('delhi-severe'),
+    }),
+  });
+  const res = await handleChatRequest(req, getFallbackChatResponse);
+  assert.equal(res.status, 429);
 });

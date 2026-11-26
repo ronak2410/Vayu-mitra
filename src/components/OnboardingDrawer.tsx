@@ -107,12 +107,14 @@ export default function OnboardingDrawer({
       className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs"
       role="dialog"
       aria-modal="true"
-      aria-label="Household Air Profile"
+      aria-labelledby="onboarding-drawer-title"
     >
       <div className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
         <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-emerald-50/50">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Household Air Profile</h2>
+            <h2 id="onboarding-drawer-title" className="text-lg font-semibold text-slate-900">
+              Household Air Profile
+            </h2>
             <p className="text-xs text-slate-500">
               Tailors AQI risk alerts & Gemini AI recommendations
             </p>

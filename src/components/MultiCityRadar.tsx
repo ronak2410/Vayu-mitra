@@ -23,21 +23,27 @@ export default function MultiCityRadar({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     const loadAll = async () => {
       if (savedLocations.length === 0) return;
       setLoading(true);
       const entries = await Promise.all(
         savedLocations.map(async (loc) => {
           try {
-            const data = await fetchLiveAQI(loc.lat, loc.lon, loc.city);
+            const data = await fetchLiveAQI(
+              loc.lat,
+              loc.lon,
+              loc.city,
+              false,
+              controller.signal
+            );
             return [loc.id, data] as const;
           } catch {
             return null;
           }
         })
       );
-      if (!cancelled) {
+      if (!controller.signal.aborted) {
         const map: Record<string, AQIData> = {};
         for (const entry of entries) {
           if (entry) map[entry[0]] = entry[1];
@@ -48,7 +54,7 @@ export default function MultiCityRadar({
     };
     loadAll();
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [savedLocations]);
 

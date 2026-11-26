@@ -34,6 +34,34 @@ export type AirPayloadValidation =
   | { valid: true; profile: HouseholdProfile; aqiData: AQIData }
   | { valid: false; error: string };
 
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX_REQUESTS = 40;
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+
+/**
+ * Simple sliding-window in-memory rate limiter for API routes.
+ */
+export function checkRateLimit(clientId: string): boolean {
+  const now = Date.now();
+  const entry = rateBuckets.get(clientId);
+  if (!entry || now > entry.resetAt) {
+    rateBuckets.set(clientId, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_MAX_REQUESTS) {
+    return false;
+  }
+  entry.count += 1;
+  return true;
+}
+
+/**
+ * Clears rate-limit buckets (for deterministic testing).
+ */
+export function clearRateLimits(): void {
+  rateBuckets.clear();
+}
+
 function isFiniteInRange(val: unknown, min: number, max: number): val is number {
   return typeof val === 'number' && Number.isFinite(val) && val >= min && val <= max;
 }
@@ -179,6 +207,14 @@ export async function handleChatRequest(
   req: Request,
   fallbackChat: (q: string, p: HouseholdProfile, a: AQIData) => string
 ): Promise<Response> {
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
+  if (!checkRateLimit(`chat:${clientIp}`)) {
+    return Response.json(
+      { error: 'Too many requests. Please wait a minute before trying again.' },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -250,6 +286,14 @@ export async function handleRecommendationsRequest(
   req: Request,
   fallbackRecs: (p: HouseholdProfile, a: AQIData) => ActionEngineResponse
 ): Promise<Response> {
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
+  if (!checkRateLimit(`recs:${clientIp}`)) {
+    return Response.json(
+      { error: 'Too many requests. Please wait a minute before trying again.' },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();

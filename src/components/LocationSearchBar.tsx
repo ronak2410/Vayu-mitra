@@ -148,6 +148,7 @@ export default function LocationSearchBar({
         type="button"
         onClick={handleDetectGPS}
         disabled={detecting}
+        aria-busy={detecting}
         className="shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition disabled:opacity-60"
         title="Detect my exact GPS location and load live AQI"
       >

@@ -34,13 +34,15 @@ export default function SettingsModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Gemini API Settings"
+      aria-labelledby="settings-modal-title"
     >
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-emerald-600" />
-            <h2 className="text-sm font-bold text-slate-900">Gemini API Settings</h2>
+            <KeyRound className="w-4 h-4 text-emerald-600" aria-hidden="true" />
+            <h2 id="settings-modal-title" className="text-sm font-bold text-slate-900">
+              Gemini API Settings
+            </h2>
           </div>
           <button
             onClick={onClose}

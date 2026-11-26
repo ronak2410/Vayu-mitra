@@ -104,6 +104,9 @@ export default function ChatDrawer({
         body: JSON.stringify({ question: q, profile, aqiData, apiKey }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
+      }
       const botId = `a-${idCounter.current++}`;
       const botMsg: ChatMessage = {
         id: botId,
@@ -112,14 +115,14 @@ export default function ChatDrawer({
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, botMsg]);
-    } catch {
+    } catch (err) {
       const errId = `err-${idCounter.current++}`;
       setMessages((prev) => [
         ...prev,
         {
           id: errId,
           role: 'assistant',
-          content: 'Network error. Please try again.',
+          content: (err as Error)?.message || 'Network error. Please try again.',
           timestamp: 'Now',
         },
       ]);
@@ -133,14 +136,16 @@ export default function ChatDrawer({
       className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs"
       role="dialog"
       aria-modal="true"
-      aria-label="AI Smog Advisor Chat"
+      aria-labelledby="chat-drawer-title"
     >
       <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 bg-emerald-600 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MessageSquareHeart className="w-5 h-5" aria-hidden="true" />
             <div>
-              <h2 className="text-sm font-bold">AI Smog Advisor</h2>
+              <h2 id="chat-drawer-title" className="text-sm font-bold">
+                AI Smog Advisor
+              </h2>
               <p className="text-[11px] text-emerald-100">
                 Context-aware • {profile.city} (AQI {aqiData.aqi})
               </p>
