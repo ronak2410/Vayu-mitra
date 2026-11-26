@@ -335,3 +335,24 @@ test('validateAirPayload rejects invalid city length', () => {
   const badProfile = { ...BASE_PROFILE, city: 'x'.repeat(105) };
   assert.equal(validateAirPayload(badProfile, getDemoAQIData('delhi-severe')).valid, false);
 });
+
+// 45-48: Additional Edge-Case Tests
+test('getAQIStatus handles negative AQI gracefully as Good', () => {
+  assert.equal(getAQIStatus(-10), 'Good');
+});
+
+test('validateAirPayload rejects non-object aqiData', () => {
+  assert.equal(validateAirPayload(BASE_PROFILE, 'invalid').valid, false);
+});
+
+test('sanitizeQuestion strips tabs and newlines cleanly', () => {
+  const res = sanitizeQuestion('Hello\tWorld\nCheck');
+  assert.equal(res.valid, true);
+  assert.equal(res.sanitized, 'HelloWorldCheck');
+});
+
+test('getDemoAQIData weather includes finite temperature and humidity', () => {
+  const d = getDemoAQIData('delhi-severe');
+  assert.ok(Number.isFinite(d.weather.temperatureC));
+  assert.ok(d.weather.humidityPct >= 0 && d.weather.humidityPct <= 100);
+});

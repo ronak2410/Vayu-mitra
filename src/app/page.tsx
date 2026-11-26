@@ -20,6 +20,7 @@ import {
   SavedLocation,
 } from '@/types/vayumitra';
 import { fetchLiveAQI, getDemoAQIData } from '@/lib/aqiService';
+import { DEFAULT_PROFILE, DEFAULT_SAVED_LOCATIONS } from '@/lib/constants';
 import { getFallbackRecommendations } from '@/lib/fallbackAI';
 import DynamicSkyBackground from '@/components/DynamicSkyBackground';
 import LocationSearchBar from '@/components/LocationSearchBar';
@@ -35,34 +36,6 @@ import CommunityHub from '@/components/CommunityHub';
 import OnboardingDrawer from '@/components/OnboardingDrawer';
 import ChatDrawer from '@/components/ChatDrawer';
 import SettingsModal from '@/components/SettingsModal';
-
-const DEFAULT_PROFILE: HouseholdProfile = {
-  city: 'Delhi NCR',
-  neighborhood: 'Anand Vihar / East Delhi',
-  lat: 28.6469,
-  lon: 77.316,
-  vulnerableGroups: ['infants', 'elderly'],
-  commuteMode: 'Car',
-  homeType: 'Apartment',
-  cookingHabit: 'LPG/Piped Gas',
-};
-
-const DEFAULT_SAVED_LOCATIONS: SavedLocation[] = [
-  {
-    id: 'delhi-ncr',
-    city: 'Delhi NCR',
-    neighborhood: 'Anand Vihar / East Delhi',
-    lat: 28.6469,
-    lon: 77.316,
-  },
-  {
-    id: 'bengaluru',
-    city: 'Bengaluru',
-    neighborhood: 'Indiranagar',
-    lat: 12.9784,
-    lon: 77.6408,
-  },
-];
 
 export default function HomePage() {
   const [profile, setProfile] = useState<HouseholdProfile>(DEFAULT_PROFILE);
