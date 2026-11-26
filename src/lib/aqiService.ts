@@ -1,10 +1,10 @@
-import {
+import type {
   AQIData,
   AQIStatus,
   DailyForecastPoint,
   HourlyAQIPoint,
   WeatherContext,
-} from '@/types/vayumitra';
+} from '../types/vayumitra';
 
 const aqiCache = new Map<string, { data: AQIData; expiresAt: number }>();
 const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes

@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { getAQIStatus, isValidCoordinates, getDemoAQIData } from '../src/lib/aqiService';
-import { getFallbackRecommendations, getFallbackChatResponse } from '../src/lib/fallbackAI';
-import type { HouseholdProfile } from '../src/types/vayumitra';
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { getAQIStatus, isValidCoordinates, getDemoAQIData } from '../src/lib/aqiService.ts';
+import { getFallbackRecommendations, getFallbackChatResponse } from '../src/lib/fallbackAI.ts';
+import type { HouseholdProfile } from '../src/types/vayumitra.ts';
 
 const SAMPLE_PROFILE: HouseholdProfile = {
   city: 'Delhi NCR',
@@ -14,45 +15,43 @@ const SAMPLE_PROFILE: HouseholdProfile = {
   cookingHabit: 'LPG/Piped Gas',
 };
 
-describe('VayuMitra Core Services', () => {
-  it('classifies AQI ranges accurately', () => {
-    expect(getAQIStatus(35)).toBe('Good');
-    expect(getAQIStatus(95)).toBe('Moderate');
-    expect(getAQIStatus(220)).toBe('Poor');
-    expect(getAQIStatus(420)).toBe('Severe');
-  });
+test('getAQIStatus classifies AQI ranges accurately', () => {
+  assert.equal(getAQIStatus(35), 'Good');
+  assert.equal(getAQIStatus(95), 'Moderate');
+  assert.equal(getAQIStatus(220), 'Poor');
+  assert.equal(getAQIStatus(420), 'Severe');
+});
 
-  it('rejects out-of-bounds or NaN coordinates', () => {
-    expect(isValidCoordinates(28.64, 77.31)).toBe(true);
-    expect(isValidCoordinates(95, 77.31)).toBe(false);
-    expect(isValidCoordinates(28.64, -190)).toBe(false);
-    expect(isValidCoordinates(Number.NaN, 77.31)).toBe(false);
-  });
+test('isValidCoordinates rejects out-of-bounds or NaN coordinates', () => {
+  assert.equal(isValidCoordinates(28.64, 77.31), true);
+  assert.equal(isValidCoordinates(95, 77.31), false);
+  assert.equal(isValidCoordinates(28.64, -190), false);
+  assert.equal(isValidCoordinates(Number.NaN, 77.31), false);
+});
 
-  it('returns 3 cards per category with quantified Direct Impact', () => {
-    const aqiData = getDemoAQIData('delhi-severe');
-    const res = getFallbackRecommendations(SAMPLE_PROFILE, aqiData);
+test('getFallbackRecommendations returns 3 cards per category with Direct Impact', () => {
+  const aqiData = getDemoAQIData('delhi-severe');
+  const res = getFallbackRecommendations(SAMPLE_PROFILE, aqiData);
 
-    expect(res.isFallback).toBe(true);
-    expect(res.routines).toHaveLength(3);
-    expect(res.iaq).toHaveLength(3);
-    expect(res.alternatives).toHaveLength(3);
+  assert.equal(res.isFallback, true);
+  assert.equal(res.routines.length, 3);
+  assert.equal(res.iaq.length, 3);
+  assert.equal(res.alternatives.length, 3);
 
-    for (const card of [...res.routines, ...res.iaq, ...res.alternatives]) {
-      expect(card.title.length).toBeGreaterThan(0);
-      expect(card.directImpact.personalHealth.length).toBeGreaterThan(0);
-      expect(card.directImpact.communityEnvironmental.length).toBeGreaterThan(0);
-    }
-  });
+  for (const card of [...res.routines, ...res.iaq, ...res.alternatives]) {
+    assert.ok(card.title.length > 0);
+    assert.ok(card.directImpact.personalHealth.length > 0);
+    assert.ok(card.directImpact.communityEnvironmental.length > 0);
+  }
+});
 
-  it('provides tailored safety advice for outdoor queries', () => {
-    const aqiData = getDemoAQIData('delhi-severe');
-    const reply = getFallbackChatResponse(
-      'Is it safe to take my 3-year-old to the park?',
-      SAMPLE_PROFILE,
-      aqiData
-    );
-    expect(reply).toMatch(/not safe/i);
-    expect(reply).toMatch(/Direct Impact/i);
-  });
+test('getFallbackChatResponse provides tailored safety advice for outdoor queries', () => {
+  const aqiData = getDemoAQIData('delhi-severe');
+  const reply = getFallbackChatResponse(
+    'Is it safe to take my 3-year-old to the park?',
+    SAMPLE_PROFILE,
+    aqiData
+  );
+  assert.match(reply, /not safe/i);
+  assert.match(reply, /Direct Impact/i);
 });

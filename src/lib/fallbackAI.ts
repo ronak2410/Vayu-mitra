@@ -1,4 +1,4 @@
-import { AQIData, ActionEngineResponse, HouseholdProfile } from '@/types/vayumitra';
+import type { AQIData, ActionEngineResponse, HouseholdProfile } from '../types/vayumitra';
 
 export function getFallbackRecommendations(
   profile: HouseholdProfile,
