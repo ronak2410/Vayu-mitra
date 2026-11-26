@@ -81,16 +81,18 @@ Open [http://localhost:3000](http://localhost:3000). You can also enter your Gem
 ## Quality, Security, Accessibility & Testing
 
 ```bash
-# TypeScript type check
+# TypeScript type check (app + tests)
 npx tsc --noEmit
+npm run typecheck:tests
 
 # ESLint check
 npm run lint
 
-# Run all 52 unit tests
+# Run all 67 unit, API route, and persistence tests
 npm test
 ```
 
-- **Security:** HTTP security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-XSS-Protection`, `Permissions-Policy`, `Strict-Transport-Security`) configured in `next.config.ts`, plus strict payload validation, control-character sanitization, and coordinate bounds checking (`isValidCoordinates`).
-- **Accessibility & Multi-Device UX:** Skip-to-main-content link, `role="dialog"` / `aria-modal="true"` with `Escape`-key closing, `role="combobox"` / `listbox` / `tablist`, `aria-pressed`, keyboard-focusable 24-hour timeline bars, `useReducedMotion` support, touch-friendly 3D cards, and a Mobile Quick-Action Bottom Dock.
+- **Security:** HTTP security headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-XSS-Protection`, `Permissions-Policy`, `Strict-Transport-Security`) configured in `next.config.ts`, sliding-window per-IP rate limiting (`429`), strict runtime schema validation (`validateHouseholdProfile`, `validateAQIData`), control-character sanitization, and coordinate bounds checking (`isValidCoordinates`).
+- **Reliability & Efficiency:** `AbortController` + sequence IDs prevent stale location/AI race conditions, 5–8s upstream timeouts prevent hanging serverless calls, and a 2-minute TTL cache (`aqiCache`) speeds up city switching.
+- **Accessibility & Multi-Device UX:** Skip-to-main-content link, `role="dialog"` / `aria-modal="true"` with `aria-labelledby` and `Escape`-key closing, `role="combobox"` / `listbox` / `tablist` / `tabpanel`, `aria-pressed`, `aria-busy`, keyboard-focusable 24-hour timeline bars, `useReducedMotion` support, touch-friendly 3D cards, and a Mobile Quick-Action Bottom Dock.
 - **Deployment:** Ready for 1-click deployment on **Vercel** (`npm run build`).
