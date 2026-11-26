@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Globe, Wind, ArrowUpRight, Loader2 } from 'lucide-react';
 import { AQIData, SavedLocation } from '@/types/vayumitra';
 import { fetchLiveAQI } from '@/lib/aqiService';
+import { AQI_THEME_MAP } from '@/lib/aqiTheme';
 import TiltCard from '@/components/TiltCard';
 
 interface MultiCityRadarProps {
@@ -77,16 +78,9 @@ export default function MultiCityRadar({
         {savedLocations.map((loc) => {
           const live = cityData[loc.id];
           const isCurrent = loc.city === activeCity;
-          const badgeColor =
-            !live
-              ? 'bg-slate-100 text-slate-600'
-              : live.status === 'Good'
-              ? 'bg-emerald-100 text-emerald-800'
-              : live.status === 'Moderate'
-              ? 'bg-amber-100 text-amber-800'
-              : live.status === 'Poor'
-              ? 'bg-orange-100 text-orange-800'
-              : 'bg-rose-100 text-rose-800';
+          const badgeColor = live
+            ? AQI_THEME_MAP[live.status].softBadgeClass
+            : 'bg-slate-100 text-slate-600';
 
           return (
             <TiltCard
@@ -147,15 +141,7 @@ export default function MultiCityRadar({
                         >
                           <polyline
                             fill="none"
-                            stroke={
-                              live.status === 'Severe'
-                                ? '#e11d48'
-                                : live.status === 'Poor'
-                                ? '#ea580c'
-                                : live.status === 'Moderate'
-                                ? '#d97706'
-                                : '#059669'
-                            }
+                            stroke={AQI_THEME_MAP[live.status].strokeHex}
                             strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"

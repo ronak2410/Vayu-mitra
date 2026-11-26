@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface AnimatedNumberProps {
   value: number;
@@ -19,9 +19,10 @@ export default function AnimatedNumber({
   className = '',
 }: AnimatedNumberProps) {
   const [display, setDisplay] = useState(value);
+  const currentRef = useRef(value);
 
   useEffect(() => {
-    const startVal = display;
+    const startVal = currentRef.current;
     const diff = value - startVal;
     if (Math.abs(diff) < 0.01) {
       return;
@@ -33,9 +34,10 @@ export default function AnimatedNumber({
     const tick = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(1, elapsed / durationMs);
-      // Ease-out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplay(startVal + diff * eased);
+      const next = startVal + diff * eased;
+      currentRef.current = next;
+      setDisplay(next);
       if (progress < 1) {
         frameId = requestAnimationFrame(tick);
       }
@@ -43,9 +45,7 @@ export default function AnimatedNumber({
 
     frameId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, durationMs]);
 
   return <span className={className}>{display.toFixed(decimals)}</span>;
 }
-

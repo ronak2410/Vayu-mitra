@@ -4,6 +4,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquareHeart, Send, X, Sparkles, Mic, MicOff } from 'lucide-react';
 import { AQIData, ChatMessage, HouseholdProfile } from '@/types/vayumitra';
 
+interface SpeechRecognitionInstance {
+  lang: string;
+  interimResults: boolean;
+  onresult: (e: { results: { [k: number]: { [k: number]: { transcript: string } } } }) => void;
+  onerror: () => void;
+  onend: () => void;
+  start: () => void;
+}
+
+interface SpeechRecognitionWindow extends Window {
+  SpeechRecognition?: new () => SpeechRecognitionInstance;
+  webkitSpeechRecognition?: new () => SpeechRecognitionInstance;
+}
+
 interface ChatDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,24 +53,7 @@ export default function ChatDrawer({
   const [listening, setListening] = useState(false);
 
   const handleVoiceInput = () => {
-    const win = window as unknown as {
-      SpeechRecognition?: new () => {
-        lang: string;
-        interimResults: boolean;
-        onresult: (e: { results: { [k: number]: { [k: number]: { transcript: string } } } }) => void;
-        onerror: () => void;
-        onend: () => void;
-        start: () => void;
-      };
-      webkitSpeechRecognition?: new () => {
-        lang: string;
-        interimResults: boolean;
-        onresult: (e: { results: { [k: number]: { [k: number]: { transcript: string } } } }) => void;
-        onerror: () => void;
-        onend: () => void;
-        start: () => void;
-      };
-    };
+    const win = window as SpeechRecognitionWindow;
     const SpeechRec = win.SpeechRecognition || win.webkitSpeechRecognition;
     if (!SpeechRec || listening) return;
 
