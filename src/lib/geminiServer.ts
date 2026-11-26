@@ -214,6 +214,64 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   }
 }
 
+type ParsedApiRequest =
+  | {
+      ok: true;
+      profile: HouseholdProfile;
+      aqiData: AQIData;
+      rawBody: Record<string, unknown>;
+    }
+  | { ok: false; response: Response };
+
+async function parseAndValidateRequest(
+  req: Request,
+  bucketPrefix: string
+): Promise<ParsedApiRequest> {
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
+  if (!checkRateLimit(`${bucketPrefix}:${clientIp}`)) {
+    return {
+      ok: false,
+      response: Response.json(
+        { error: 'Too many requests. Please wait a minute before trying again.' },
+        { status: 429 }
+      ),
+    };
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return {
+      ok: false,
+      response: Response.json({ error: 'Malformed JSON request body.' }, { status: 400 }),
+    };
+  }
+
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return {
+      ok: false,
+      response: Response.json({ error: 'Request body must be a JSON object.' }, { status: 400 }),
+    };
+  }
+
+  const rawBody = body as Record<string, unknown>;
+  const payloadCheck = validateAirPayload(rawBody.profile, rawBody.aqiData);
+  if (!payloadCheck.valid) {
+    return {
+      ok: false,
+      response: Response.json({ error: payloadCheck.error }, { status: 400 }),
+    };
+  }
+
+  return {
+    ok: true,
+    profile: payloadCheck.profile,
+    aqiData: payloadCheck.aqiData,
+    rawBody,
+  };
+}
+
 /**
  * Shared runtime handler for POST /api/chat.
  */
@@ -221,39 +279,16 @@ export async function handleChatRequest(
   req: Request,
   fallbackChat: (q: string, p: HouseholdProfile, a: AQIData) => string
 ): Promise<Response> {
-  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
-  if (!checkRateLimit(`chat:${clientIp}`)) {
-    return Response.json(
-      { error: 'Too many requests. Please wait a minute before trying again.' },
-      { status: 429 }
-    );
-  }
+  const parsed = await parseAndValidateRequest(req, 'chat');
+  if (!parsed.ok) return parsed.response;
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: 'Malformed JSON request body.' }, { status: 400 });
-  }
-
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return Response.json({ error: 'Request body must be a JSON object.' }, { status: 400 });
-  }
-
-  const { question, profile, aqiData, apiKey: clientApiKey } = body as Record<string, unknown>;
-
-  const qCheck = sanitizeQuestion(question);
+  const qCheck = sanitizeQuestion(parsed.rawBody.question);
   if (!qCheck.valid || !qCheck.sanitized) {
     return Response.json({ error: qCheck.error }, { status: 400 });
   }
 
-  const payloadCheck = validateAirPayload(profile, aqiData);
-  if (!payloadCheck.valid) {
-    return Response.json({ error: payloadCheck.error }, { status: 400 });
-  }
-
-  const validProfile = payloadCheck.profile;
-  const validAqi = payloadCheck.aqiData;
+  const { profile: validProfile, aqiData: validAqi, rawBody } = parsed;
+  const clientApiKey = rawBody.apiKey;
 
   try {
     const apiKey = resolveGeminiKey(clientApiKey);
@@ -300,34 +335,11 @@ export async function handleRecommendationsRequest(
   req: Request,
   fallbackRecs: (p: HouseholdProfile, a: AQIData) => ActionEngineResponse
 ): Promise<Response> {
-  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
-  if (!checkRateLimit(`recs:${clientIp}`)) {
-    return Response.json(
-      { error: 'Too many requests. Please wait a minute before trying again.' },
-      { status: 429 }
-    );
-  }
+  const parsed = await parseAndValidateRequest(req, 'recs');
+  if (!parsed.ok) return parsed.response;
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: 'Malformed JSON request body.' }, { status: 400 });
-  }
-
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return Response.json({ error: 'Request body must be a JSON object.' }, { status: 400 });
-  }
-
-  const { profile, aqiData, apiKey: clientApiKey } = body as Record<string, unknown>;
-
-  const payloadCheck = validateAirPayload(profile, aqiData);
-  if (!payloadCheck.valid) {
-    return Response.json({ error: payloadCheck.error }, { status: 400 });
-  }
-
-  const validProfile = payloadCheck.profile;
-  const validAqi = payloadCheck.aqiData;
+  const { profile: validProfile, aqiData: validAqi, rawBody } = parsed;
+  const clientApiKey = rawBody.apiKey;
 
   try {
     const apiKey = resolveGeminiKey(clientApiKey);
@@ -367,12 +379,12 @@ Each item MUST have:
 }`;
 
     const result = await withTimeout(model.generateContent(prompt), 8000);
-    const parsed = JSON.parse(result.response.text());
+    const parsedJson = JSON.parse(result.response.text());
 
     return Response.json({
-      routines: parsed.routines || [],
-      iaq: parsed.iaq || [],
-      alternatives: parsed.alternatives || [],
+      routines: parsedJson.routines || [],
+      iaq: parsedJson.iaq || [],
+      alternatives: parsedJson.alternatives || [],
       isFallback: false,
     });
   } catch (error) {
