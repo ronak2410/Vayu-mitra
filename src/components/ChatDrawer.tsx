@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquareHeart, Send, X, Sparkles } from 'lucide-react';
+import { MessageSquareHeart, Send, X, Sparkles, Mic, MicOff } from 'lucide-react';
 import { AQIData, ChatMessage, HouseholdProfile } from '@/types/vayumitra';
 
 interface ChatDrawerProps {
@@ -36,6 +36,42 @@ export default function ChatDrawer({
   ]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [listening, setListening] = useState(false);
+
+  const handleVoiceInput = () => {
+    const win = window as unknown as {
+      SpeechRecognition?: new () => {
+        lang: string;
+        interimResults: boolean;
+        onresult: (e: { results: { [k: number]: { [k: number]: { transcript: string } } } }) => void;
+        onerror: () => void;
+        onend: () => void;
+        start: () => void;
+      };
+      webkitSpeechRecognition?: new () => {
+        lang: string;
+        interimResults: boolean;
+        onresult: (e: { results: { [k: number]: { [k: number]: { transcript: string } } } }) => void;
+        onerror: () => void;
+        onend: () => void;
+        start: () => void;
+      };
+    };
+    const SpeechRec = win.SpeechRecognition || win.webkitSpeechRecognition;
+    if (!SpeechRec || listening) return;
+
+    const rec = new SpeechRec();
+    rec.lang = 'en-IN';
+    rec.interimResults = false;
+    setListening(true);
+    rec.onresult = (e) => {
+      const transcript = e.results?.[0]?.[0]?.transcript || '';
+      if (transcript) setInput(transcript);
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    rec.start();
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -183,6 +219,19 @@ export default function ChatDrawer({
             placeholder="Ask about outdoor play, masks, IAQ..."
             className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
+          <button
+            type="button"
+            onClick={handleVoiceInput}
+            aria-label={listening ? 'Listening for voice question' : 'Ask using voice'}
+            title="Voice input"
+            className={`p-2.5 rounded-xl border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+              listening
+                ? 'bg-rose-50 border-rose-300 text-rose-600 animate-pulse'
+                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
           <button
             type="submit"
             disabled={sending || !input.trim()}

@@ -111,19 +111,59 @@ export default function MultiCityRadar({
                 </div>
 
                 {live ? (
-                  <div className="flex items-end justify-between mt-2">
-                    <div>
-                      <span className="text-2xl font-extrabold text-slate-900">{live.aqi}</span>
-                      <span className="text-[10px] text-slate-500 ml-1">AQI</span>
+                  <div className="space-y-2 mt-2">
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <span className="text-2xl font-extrabold text-slate-900">{live.aqi}</span>
+                        <span className="text-[10px] text-slate-500 ml-1">AQI</span>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}`}>
+                          {live.status}
+                        </span>
+                        <p className="text-[10px] text-slate-500 flex items-center justify-end gap-1">
+                          <Wind className="w-3 h-3" aria-hidden="true" /> {live.weather.windSpeedKmh} km/h
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right space-y-1">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeColor}`}>
-                        {live.status}
-                      </span>
-                      <p className="text-[10px] text-slate-500 flex items-center justify-end gap-1">
-                        <Wind className="w-3 h-3" /> {live.weather.windSpeedKmh} km/h
-                      </p>
-                    </div>
+
+                    {/* 24-hour PM2.5 SVG Sparkline */}
+                    {live.hourly.length > 1 && (() => {
+                      const vals = live.hourly.slice(0, 24).map((h) => h.pm25);
+                      const min = Math.min(...vals);
+                      const max = Math.max(...vals, min + 1);
+                      const pts = vals
+                        .map((v, i) => {
+                          const x = (i / (vals.length - 1)) * 100;
+                          const y = 22 - ((v - min) / (max - min)) * 18;
+                          return `${x.toFixed(1)},${y.toFixed(1)}`;
+                        })
+                        .join(' ');
+                      return (
+                        <svg
+                          viewBox="0 0 100 24"
+                          className="w-full h-6 overflow-visible"
+                          aria-hidden="true"
+                        >
+                          <polyline
+                            fill="none"
+                            stroke={
+                              live.status === 'Severe'
+                                ? '#e11d48'
+                                : live.status === 'Poor'
+                                ? '#ea580c'
+                                : live.status === 'Moderate'
+                                ? '#d97706'
+                                : '#059669'
+                            }
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            points={pts}
+                          />
+                        </svg>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div className="h-10 flex items-center text-xs text-slate-400">

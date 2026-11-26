@@ -12,6 +12,7 @@ import {
   HeartPulse,
   Globe2,
   RefreshCw,
+  CheckCircle2,
 } from 'lucide-react';
 import { ActionCategory, ActionEngineResponse, RecommendationCard } from '@/types/vayumitra';
 import TiltCard from '@/components/TiltCard';
@@ -31,10 +32,18 @@ const TABS: { id: ActionCategory; label: string; icon: React.ReactNode }[] = [
 export default function ActionEngine({ data, loading, onRefresh }: ActionEngineProps) {
   const [activeTab, setActiveTab] = useState<ActionCategory>('routines');
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+  const [completedIds, setCompletedIds] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const toggleComplete = (id: string) => {
+    setCompletedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const allCards = [...data.routines, ...data.iaq, ...data.alternatives];
+  const completedCount = allCards.filter((c) => completedIds[c.id]).length;
 
   const cards: RecommendationCard[] = data[activeTab] || [];
 
@@ -64,7 +73,10 @@ export default function ActionEngine({ data, loading, onRefresh }: ActionEngineP
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Interactive 3D recommendation cards with quantified Personal & Community Direct Impact
+            Interactive 3D recommendation cards •{' '}
+            <strong className="text-emerald-700">
+              {completedCount}/{allCards.length} completed today
+            </strong>
           </p>
         </div>
 
@@ -133,13 +145,28 @@ export default function ActionEngine({ data, loading, onRefresh }: ActionEngineP
               >
                 <TiltCard className="rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/70 p-4 shadow-sm flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        {card.effort}
-                      </span>
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200/70">
-                        {card.cost}
-                      </span>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                          {card.effort}
+                        </span>
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200/70">
+                          {card.cost}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        aria-pressed={!!completedIds[card.id]}
+                        onClick={() => toggleComplete(card.id)}
+                        className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border transition ${
+                          completedIds[card.id]
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'bg-white text-slate-500 border-slate-200 hover:border-emerald-400'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                        {completedIds[card.id] ? 'Done' : 'Mark Done'}
+                      </button>
                     </div>
                     <h3 className="text-sm font-bold text-slate-900 mb-1.5 leading-snug">
                       {card.title}
