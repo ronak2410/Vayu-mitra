@@ -76,6 +76,11 @@ export default function LocationSearchBar({
         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open && results.length > 0}
+          aria-controls="location-search-listbox"
+          aria-label="Search any city or area"
           value={query}
           onFocus={() => results.length > 0 && setOpen(true)}
           onChange={(e) => setQuery(e.target.value)}
@@ -83,12 +88,15 @@ export default function LocationSearchBar({
           className="w-full pl-9 pr-9 py-2.5 text-xs sm:text-sm bg-white/85 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 placeholder:text-slate-400"
         />
         {searching && (
-          <Loader2 className="w-4 h-4 text-emerald-600 animate-spin absolute right-3 top-1/2 -translate-y-1/2" />
+          <Loader2 className="w-4 h-4 text-emerald-600 animate-spin absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
         )}
 
         <AnimatePresence>
           {open && results.length > 0 && (
             <motion.div
+              id="location-search-listbox"
+              role="listbox"
+              aria-label="City search results"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
@@ -98,6 +106,8 @@ export default function LocationSearchBar({
                 <button
                   key={item.id}
                   type="button"
+                  role="option"
+                  aria-selected={false}
                   onClick={() => {
                     onSelectLocation({
                       city: item.name,

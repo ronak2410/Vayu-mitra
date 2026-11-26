@@ -1,35 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { AQIData, HouseholdProfile } from '@/types/vayumitra';
+import type { AQIData, HouseholdProfile } from '@/types/vayumitra';
 import { getFallbackRecommendations } from '@/lib/fallbackAI';
+import {
+  getGeminiFlashModel,
+  resolveGeminiKey,
+  validateAirPayload,
+} from '@/lib/geminiServer';
 
+/**
+ * Generates structured 3-module GenAI recommendations with Direct Impact metrics.
+ */
 export async function POST(req: NextRequest) {
+  let parsedBody: { profile?: HouseholdProfile; aqiData?: AQIData; apiKey?: string } = {};
   try {
-    const body = await req.json();
-    const {
-      profile,
-      aqiData,
-      apiKey: clientApiKey,
-    }: { profile: HouseholdProfile; aqiData: AQIData; apiKey?: string } = body;
+    parsedBody = await req.json();
+    const { profile, aqiData, apiKey: clientApiKey } = parsedBody;
 
-    if (!profile || !aqiData || typeof aqiData.aqi !== 'number') {
-      return NextResponse.json({ error: 'Invalid profile or AQI payload.' }, { status: 400 });
+    const payloadCheck = validateAirPayload(profile, aqiData);
+    if (!payloadCheck.valid || !profile || !aqiData) {
+      return NextResponse.json({ error: payloadCheck.error }, { status: 400 });
     }
 
-    const apiKey = clientApiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
-
+    const apiKey = resolveGeminiKey(clientApiKey);
     if (!apiKey) {
       return NextResponse.json(getFallbackRecommendations(profile, aqiData));
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      generationConfig: {
-        responseMimeType: 'application/json',
-      },
-    });
-
+    const model = getGeminiFlashModel(apiKey, true);
     const prompt = `You are VayuMitra, an expert Urban Air Quality & Winter Smog Assistant.
 Generate personalized, practical recommendations for this household:
 - Location: ${profile.city}, ${profile.neighborhood}
@@ -61,8 +58,7 @@ Each item MUST have:
 }`;
 
     const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(result.response.text());
 
     return NextResponse.json({
       routines: parsed.routines || [],
@@ -72,12 +68,9 @@ Each item MUST have:
     });
   } catch (error) {
     console.error('Gemini recommendations error:', error);
-    try {
-      const body = await req.clone().json();
-      return NextResponse.json(getFallbackRecommendations(body.profile, body.aqiData));
-    } catch {
-      return NextResponse.json({ error: 'Failed to generate recommendations' }, { status: 500 });
+    if (parsedBody.profile && parsedBody.aqiData) {
+      return NextResponse.json(getFallbackRecommendations(parsedBody.profile, parsedBody.aqiData));
     }
+    return NextResponse.json({ error: 'Failed to generate recommendations' }, { status: 500 });
   }
 }
-

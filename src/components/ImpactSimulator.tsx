@@ -103,6 +103,8 @@ export default function ImpactSimulator({ aqiData }: { aqiData: AQIData }) {
               return (
                 <motion.button
                   key={choice.id}
+                  type="button"
+                  aria-pressed={active}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => toggle(choice.id)}
                   className={`flex items-start gap-2.5 p-3 rounded-2xl border text-left transition ${

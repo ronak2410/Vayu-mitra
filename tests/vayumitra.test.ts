@@ -5,7 +5,13 @@ import {
   isValidCoordinates,
   getDemoAQIData,
   CITY_PRESETS,
+  formatVulnerableGroups,
 } from '../src/lib/aqiService.ts';
+import {
+  validateAirPayload,
+  sanitizeQuestion,
+  resolveGeminiKey,
+} from '../src/lib/geminiServer.ts';
 import {
   getFallbackRecommendations,
   getFallbackChatResponse,
@@ -269,4 +275,35 @@ test('getFallbackRecommendations supports all valid lifestyle combinations', () 
       }
     }
   }
+});
+
+// 37-42: Security & Validation helper tests
+test('formatVulnerableGroups formats groups and falls back cleanly', () => {
+  assert.equal(formatVulnerableGroups(['infants', 'asthma']), 'Infants & Toddlers, Asthma/Respiratory');
+  assert.equal(formatVulnerableGroups([], 'everyone'), 'everyone');
+});
+
+test('validateAirPayload accepts valid profile and AQI data', () => {
+  const res = validateAirPayload(BASE_PROFILE, getDemoAQIData('delhi-severe'));
+  assert.equal(res.valid, true);
+});
+
+test('validateAirPayload rejects missing profile or out-of-range AQI', () => {
+  assert.equal(validateAirPayload(null, getDemoAQIData('delhi-severe')).valid, false);
+  assert.equal(validateAirPayload(BASE_PROFILE, { aqi: -5 }).valid, false);
+  assert.equal(validateAirPayload(BASE_PROFILE, { aqi: 1500 }).valid, false);
+});
+
+test('sanitizeQuestion strips control characters and enforces length limit', () => {
+  const ok = sanitizeQuestion('  Is it safe\u0007 today?  ');
+  assert.equal(ok.valid, true);
+  assert.equal(ok.sanitized, 'Is it safe today?');
+
+  assert.equal(sanitizeQuestion('').valid, false);
+  assert.equal(sanitizeQuestion('a'.repeat(501)).valid, false);
+});
+
+test('resolveGeminiKey accepts valid client key and rejects oversized input', () => {
+  assert.equal(resolveGeminiKey('  AIzaTestKey123  '), 'AIzaTestKey123');
+  assert.equal(resolveGeminiKey('x'.repeat(200)), '');
 });

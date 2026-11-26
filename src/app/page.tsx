@@ -21,6 +21,7 @@ import { fetchLiveAQI, getDemoAQIData } from '@/lib/aqiService';
 import { getFallbackRecommendations } from '@/lib/fallbackAI';
 import DynamicSkyBackground from '@/components/DynamicSkyBackground';
 import LocationSearchBar from '@/components/LocationSearchBar';
+import SmogAlertBanner from '@/components/SmogAlertBanner';
 import SmogDashboard from '@/components/SmogDashboard';
 import ImpactSimulator from '@/components/ImpactSimulator';
 import HomeIAQVisualizer3D from '@/components/HomeIAQVisualizer3D';
@@ -346,6 +347,7 @@ export default function HomePage() {
               )}
           </div>
         </div>
+        <SmogAlertBanner aqiData={aqiData} profile={profile} />
         <SmogDashboard aqiData={aqiData} profile={profile} loading={aqiLoading} />
         <ImpactSimulator aqiData={aqiData} />
         <HomeIAQVisualizer3D aqiData={aqiData} homeType={profile.homeType} />

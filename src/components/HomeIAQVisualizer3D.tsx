@@ -141,6 +141,7 @@ export default function HomeIAQVisualizer3D({
                 <motion.button
                   key={room.id}
                   type="button"
+                  aria-pressed={isSelected}
                   whileHover={{ translateZ: 12, scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedRoomId(room.id)}
@@ -212,6 +213,7 @@ export default function HomeIAQVisualizer3D({
 
           <button
             type="button"
+            aria-pressed={activeFixes[selectedRoom.id]}
             onClick={() => toggleFix(selectedRoom.id)}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-bold transition ${
               activeFixes[selectedRoom.id]

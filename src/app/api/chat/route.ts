@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { AQIData, HouseholdProfile } from '@/types/vayumitra';
+import type { AQIData, HouseholdProfile } from '@/types/vayumitra';
 import { getFallbackChatResponse } from '@/lib/fallbackAI';
+import {
+  getGeminiFlashModel,
+  resolveGeminiKey,
+  sanitizeQuestion,
+  validateAirPayload,
+} from '@/lib/geminiServer';
 
+/**
+ * Handles contextual AI Smog Advisor chat requests grounded in live AQI and household profile.
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -12,36 +20,31 @@ export async function POST(req: NextRequest) {
       aqiData,
       apiKey: clientApiKey,
     }: {
-      question: string;
+      question: unknown;
       profile: HouseholdProfile;
       aqiData: AQIData;
       apiKey?: string;
     } = body;
 
-    if (typeof question !== 'string' || !question.trim() || question.length > 500) {
-      return NextResponse.json(
-        { error: 'Invalid question: must be a non-empty string under 500 characters.' },
-        { status: 400 }
-      );
+    const qCheck = sanitizeQuestion(question);
+    if (!qCheck.valid || !qCheck.sanitized) {
+      return NextResponse.json({ error: qCheck.error }, { status: 400 });
     }
 
-    if (!profile || !aqiData || typeof aqiData.aqi !== 'number') {
-      return NextResponse.json({ error: 'Missing household or AQI context.' }, { status: 400 });
+    const payloadCheck = validateAirPayload(profile, aqiData);
+    if (!payloadCheck.valid) {
+      return NextResponse.json({ error: payloadCheck.error }, { status: 400 });
     }
 
-    const sanitizedQuestion = question.trim().slice(0, 500);
-    const apiKey = clientApiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
-
+    const apiKey = resolveGeminiKey(clientApiKey);
     if (!apiKey) {
       return NextResponse.json({
-        reply: getFallbackChatResponse(sanitizedQuestion, profile, aqiData),
+        reply: getFallbackChatResponse(qCheck.sanitized, profile, aqiData),
         isFallback: true,
       });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
+    const model = getGeminiFlashModel(apiKey);
     const prompt = `You are VayuMitra, a calm, empathetic, science-backed Urban Air Quality & Winter Smog Advisor.
 Household Context:
 - Location: ${profile.city}, ${profile.neighborhood}
@@ -49,7 +52,7 @@ Household Context:
 - Vulnerable Members: ${profile.vulnerableGroups.length ? profile.vulnerableGroups.join(', ') : 'None'}
 - Commute: ${profile.commuteMode}, Home: ${profile.homeType}, Cooking: ${profile.cookingHabit}
 
-User Question: "${question}"
+User Question: "${qCheck.sanitized}"
 
 Respond concisely in markdown (under 140 words). Always give a clear Yes/No/Caution answer first, followed by 2-3 practical steps, and end with a brief "Direct Impact:" line.`;
 
@@ -69,4 +72,3 @@ Respond concisely in markdown (under 140 words). Always give a clear Yes/No/Caut
     );
   }
 }
-
