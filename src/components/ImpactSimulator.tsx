@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Cigarette, Check, Shield, Leaf, Sparkles } from 'lucide-react';
 import { AQIData } from '@/types/vayumitra';
 import TiltCard from '@/components/TiltCard';
+import AnimatedNumber from '@/components/AnimatedNumber';
 
 interface ChoiceItem {
   id: string;
@@ -151,7 +152,7 @@ export default function ImpactSimulator({ aqiData }: { aqiData: AQIData }) {
             <div className="my-2">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-extrabold text-rose-700">
-                  {projectedCigs}
+                  <AnimatedNumber value={projectedCigs} decimals={1} />
                 </span>
                 <span className="text-[11px] font-semibold text-slate-500 line-through">
                   {baselineCigs}
@@ -162,7 +163,7 @@ export default function ImpactSimulator({ aqiData }: { aqiData: AQIData }) {
               </p>
             </div>
             <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full self-start">
-              {cigsAvoided} cigs avoided today
+              <AnimatedNumber value={cigsAvoided} decimals={1} /> cigs avoided today
             </span>
           </TiltCard>
 
@@ -179,7 +180,7 @@ export default function ImpactSimulator({ aqiData }: { aqiData: AQIData }) {
             <div className="my-2">
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-extrabold text-emerald-800">
-                  {projectedPm25}
+                  <AnimatedNumber value={projectedPm25} />
                 </span>
                 <span className="text-[11px] font-semibold text-slate-500">µg/m³</span>
               </div>

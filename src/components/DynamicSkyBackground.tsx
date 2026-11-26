@@ -130,6 +130,29 @@ export default function DynamicSkyBackground({
 
       {/* Live drifting particulate canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+
+      {/* Subtle animated atmospheric air-current waves */}
+      <motion.svg
+        animate={{ x: [0, -60, 0] }}
+        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute bottom-0 left-0 w-[120%] h-48 opacity-30"
+        viewBox="0 0 1440 320"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <path
+          fill={
+            status === 'Severe'
+              ? 'rgba(244,63,94,0.18)'
+              : status === 'Poor'
+              ? 'rgba(249,115,22,0.18)'
+              : status === 'Moderate'
+              ? 'rgba(245,158,11,0.16)'
+              : 'rgba(16,185,129,0.18)'
+          }
+          d="M0,192L60,186.7C120,181,240,171,360,186.7C480,203,600,245,720,240C840,235,960,181,1080,165.3C1200,149,1320,171,1380,181.3L1440,192L1440,320L0,320Z"
+        />
+      </motion.svg>
     </div>
   );
 }

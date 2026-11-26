@@ -17,6 +17,7 @@ import { AQIData, HouseholdProfile, HourlyAQIPoint } from '@/types/vayumitra';
 import { formatVulnerableGroups } from '@/lib/aqiService';
 import AtmosphericOrb3D from '@/components/AtmosphericOrb3D';
 import TiltCard from '@/components/TiltCard';
+import AnimatedNumber from '@/components/AnimatedNumber';
 
 interface SmogDashboardProps {
   aqiData: AQIData;
@@ -164,14 +165,9 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
               </div>
             </div>
             <div className="my-3">
-              <motion.span
-                key={aqiData.pm25}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-3xl font-extrabold text-slate-900"
-              >
-                {aqiData.pm25}
-              </motion.span>
+              <span className="text-3xl font-extrabold text-slate-900">
+                <AnimatedNumber value={aqiData.pm25} />
+              </span>
               <span className="text-xs font-medium text-slate-500 ml-1">µg/m³</span>
             </div>
             <p className="text-[11px] text-slate-500 leading-snug">
@@ -190,14 +186,9 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
               </div>
             </div>
             <div className="my-3">
-              <motion.span
-                key={aqiData.pm10}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-3xl font-extrabold text-slate-900"
-              >
-                {aqiData.pm10}
-              </motion.span>
+              <span className="text-3xl font-extrabold text-slate-900">
+                <AnimatedNumber value={aqiData.pm10} />
+              </span>
               <span className="text-xs font-medium text-slate-500 ml-1">µg/m³</span>
             </div>
             <p className="text-[11px] text-slate-500 leading-snug">
@@ -216,14 +207,9 @@ export default function SmogDashboard({ aqiData, profile, loading }: SmogDashboa
               </div>
             </div>
             <div className="my-3">
-              <motion.span
-                key={aqiData.no2}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-3xl font-extrabold text-slate-900"
-              >
-                {aqiData.no2}
-              </motion.span>
+              <span className="text-3xl font-extrabold text-slate-900">
+                <AnimatedNumber value={aqiData.no2} />
+              </span>
               <span className="text-xs font-medium text-slate-500 ml-1">µg/m³</span>
             </div>
             <p className="text-[11px] text-slate-500 leading-snug">
